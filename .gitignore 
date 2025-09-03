@@ -1,0 +1,13 @@
+# Virtual Environment
+.venv/
+venv/
+
+# Generated music files
+output/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# VSCode settings
+.vscode/
