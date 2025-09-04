@@ -11,4 +11,4 @@ os.makedirs('../output', exist_ok=True)
 
 # Save to MIDI
 melody.write("midi", fp="../output/test_scale.mid")
-print("✅ MIDI file created at output/test_scale.mid")
+print(" MIDI file created at output/test_scale.mid")

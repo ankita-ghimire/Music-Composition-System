@@ -1,54 +1,22 @@
-
-
 import random
 import os
-from mido import MidiFile, MidiTrack, Message
-from music21 import scale
-
-# --- HELPER FUNCTION: Saves the melody to a file ---
-# This function is not part of the class, it's a standalone tool.
-
-def save_melody_to_midi(melody_events, filename):
-    """
-    Saves a melody (list of event tuples) to a MIDI file.
-    """
-    mid = MidiFile()
-    track = MidiTrack()
-    mid.tracks.append(track)
-
-    print(f"Saving melody to {filename}...")
-
-    # A fixed duration for each note to sound out (in MIDI ticks)
-    NOTE_DURATION_TICKS = 240 
-
-    for note, pause_before_note_ticks in melody_events:
-        # Note On: velocity=64 (medium volume), time=pause from the last event
-        track.append(Message('note_on', note=int(note), velocity=64, time=int(pause_before_note_ticks)))
-        # Note Off: The note sounds for NOTE_DURATION_TICKS
-        track.append(Message('note_off', note=int(note), velocity=64, time=NOTE_DURATION_TICKS))
-
-    mid.save(filename)
-    print("File saved successfully.")
-
-
-# --- THE MAIN ENGINE CLASS ---
-# All the logic for creating melodies is contained in here.
+from mido import MidiFile
+from music21 import stream, note, scale
 
 class MelodyGenerator:
     """
     A class to generate melodies using a Markov chain, trained on MIDI files.
+    Returns music21 streams so it integrates directly with chords.
     """
-    # 1. THE CONSTRUCTOR (runs when you create an instance)
     def __init__(self):
-        """Initializes the generator."""
         self.chain = {}
         self.trained_notes = []
 
-    # 2. PUBLIC METHODS (the main tools your friend will use)
+    # -------------------------------
+    # Training
+    # -------------------------------
     def train(self, midi_folder_path):
-        """
-        Trains the Markov model on all MIDI files in a given folder.
-        """
+        """Train the Markov model on all MIDI files in a given folder."""
         all_events = []
         print("Starting training...")
         for filename in os.listdir(midi_folder_path):
@@ -62,43 +30,58 @@ class MelodyGenerator:
         self.chain = self._build_markov_chain(all_events)
         print(f"\nTraining complete. Model built from {len(all_events)} events.")
 
-    def generate(self, length, key='C', start_note=None):
+    # -------------------------------
+    # Melody generation
+    # -------------------------------
+    def generate(self, num_bars=4, key='C', mode='major', start_note=None):
         """
-        Generates a new melody, biased towards a specific musical key.
+        Generates a melody aligned to bars.
+        Returns: music21.stream.Part
         """
-        if not self.chain:
-            print("Error: Model not trained. Call .train() first.")
-            return None
+        melody = stream.Part()
 
-        key_scale = scale.MajorScale(key) if key.isupper() else scale.MinorScale(key)
+        # Fallback if not trained
+        if not self.chain:
+            print("⚠ No training data found. Falling back to scale-based melody.")
+            return self._fallback_scale_melody(num_bars, key, mode)
+
+        # Choose scale
+        key_scale = scale.MajorScale(key) if mode == "major" else scale.MinorScale(key)
         scale_notes = [p.midi for p in key_scale.getPitches()]
 
+        # Pick starting event
         if start_note and start_note in self.trained_notes:
             possible_starts = [event for event in self.chain.keys() if event[0] == start_note]
             current_event = random.choice(possible_starts) if possible_starts else random.choice(list(self.chain.keys()))
         else:
             current_event = random.choice(list(self.chain.keys()))
 
-        melody = [current_event]
+        # Generate melody notes (4 notes per bar → num_bars*4 total)
+        for _ in range(num_bars * 4):
+            pitch = current_event[0]
 
-        for _ in range(length - 1):
-            possible_next_events = self.chain.get(current_event)
-            if not possible_next_events:
-                fallback_events = [ev for ev in self.chain.keys() if ev[0] in scale_notes]
-                current_event = random.choice(fallback_events if fallback_events else list(self.chain.keys()))
+            # Keep notes inside the scale most of the time
+            if pitch not in scale_notes:
+                pitch = random.choice(scale_notes)
+
+            n = note.Note(pitch)
+            n.quarterLength = 1.0
+            melody.append(n)
+
+            # Move to next event
+            possible_next = self.chain.get(current_event, [])
+            if possible_next:
+                current_event = random.choice(possible_next)
             else:
-                in_scale_options = [ev for ev in possible_next_events if ev[0] in scale_notes]
-                if in_scale_options and random.random() < 0.8: # 80% chance to stick to the key
-                    next_event = random.choice(in_scale_options)
-                else:
-                    next_event = random.choice(possible_next_events)
-                melody.append(next_event)
-                current_event = next_event
+                current_event = random.choice(list(self.chain.keys()))
+
         return melody
 
-    # 3. "PRIVATE" HELPER METHODS (used internally by the class)
+    # -------------------------------
+    # Private helpers
+    # -------------------------------
     def _get_musical_events_from_midi(self, file_path):
-        """Extracts (note, duration) tuples from a MIDI file."""
+        """Extracts (note, time) tuples from a MIDI file."""
         events = []
         try:
             midi_file = MidiFile(file_path)
@@ -122,24 +105,15 @@ class MelodyGenerator:
             chain[current_event].append(next_event)
         return chain
 
+    def _fallback_scale_melody(self, num_bars, key, mode):
+        """Fallback if training data is missing → simple scale melody."""
+        melody = stream.Part()
+        key_scale = scale.MajorScale(key) if mode == "major" else scale.MinorScale(key)
+        scale_notes = [p.midi for p in key_scale.getPitches()]
 
-# --- SCRIPT EXECUTION ---
-# This block runs only when you execute this file directly.
-
-if __name__ == "__main__":
-    # 1. Create an instance of the melody engine
-    melody_engine = MelodyGenerator()
-
-    # 2. Train the engine on your folder of MIDI files
-    melody_engine.train("training_data")
-
-    # 3. Generate a new 100-note melody in the key of C Major
-    new_melody = melody_engine.generate(100, key='C')
-
-    # 4. If a melody was created, print it and save it to a file
-    if new_melody:
-        print("\n--- Generated Melody Data ---")
-        print(new_melody)
-        
-        # 5. Save the result so you can listen to it
-        save_melody_to_midi(new_melody, "output/ai_melody_final.mid")
+        for _ in range(num_bars * 4):
+            pitch = random.choice(scale_notes)
+            n = note.Note(pitch)
+            n.quarterLength = 1.0
+            melody.append(n)
+        return melody
