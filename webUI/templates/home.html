@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Welcome to Music Composer AI{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Main Welcome Message Area -->
+    <div class="col-lg-8">
+        <div class="card p-4 p-md-5 text-center welcome-card">
+            <h1 class="display-4">AI-Powered Music Composition</h1>
+            <p class="lead my-4">
+                Bring your musical ideas to life. Our intelligent system generates unique melodies and harmonies tailored to your specifications. No musical experience required.
+            </p>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="{{ url_for('compose_page') }}" class="btn btn-primary btn-lg px-4 gap-3">
+                    <i class="fas fa-wand-magic-sparkles"></i> Start Composing
+                </a>
+                <a href="{{ url_for('explore') }}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-compass"></i> Explore Creations
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar with Quick Links -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title form-section-title">Quick Links</h5>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('compose_page') }}" class="list-group-item list-group-item-action">New Composition</a>
+                    <a href="{{ url_for('my_compositions') }}" class="list-group-item list-group-item-action">My Saved Work</a>
+                    <a href="{{ url_for('about') }}" class="list-group-item list-group-item-action">Learn About the AI</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}```

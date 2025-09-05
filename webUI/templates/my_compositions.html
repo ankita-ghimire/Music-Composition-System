@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}My Compositions{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>My Compositions</h2>
+    <a href="{{ url_for('home') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Create New</a>
+</div>
+
+<!-- List of User's Compositions -->
+<div class="list-group">
+    <!-- Example Item -->
+    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-1">C Major Idea</h5>
+            <small class="text-muted">Created on: Sep 05, 2025</small>
+        </div>
+        <div>
+            <button class="btn btn-sm btn-outline-secondary me-2"><i class="fas fa-play"></i> Play</button>
+            <button class="btn btn-sm btn-outline-secondary me-2"><i class="fas fa-download"></i> MIDI</button>
+            <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+        </div>
+    </div>
+    <!-- Add more items like this as you save compositions -->
+</div>
+{% endblock %}

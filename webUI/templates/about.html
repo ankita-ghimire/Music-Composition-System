@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}About The Project{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card p-4">
+            <h2 class="text-center mb-4">About Our AI Music Composer</h2>
+            <p class="lead">
+                This project is an exploration into the intersection of music and artificial intelligence. Our goal is to provide a tool that is both a creative partner for seasoned musicians and an accessible entry point for newcomers to compose their own melodies and harmonies.
+            </p>
+            <hr class="my-4">
+            <h4>How It Works</h4>
+            <p>
+                <strong>Melody Generation:</strong> Our AI generates melodies using a Markov chain model. It has been trained on a dataset of musical pieces to learn the probabilities of which notes are likely to follow one another, creating sequences that are both novel and musically coherent.
+            </p>
+            <p>
+                <strong>Chord Generation:</strong> For every melody, the system provides a harmonically rich foundation. It generates chord progressions based on fundamental principles of music theory, ensuring that the chords perfectly complement the key and mode of the generated melody.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

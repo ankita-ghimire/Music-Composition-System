@@ -1,0 +1,158 @@
+/* --- Beige Theme Variables --- */
+/* Add these styles to your existing style.css */
+
+/* --- Layout & Panels --- */
+.results-panel {
+    min-height: 400px; /* Ensures the right panel has a consistent height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.form-section-title {
+    font-weight: 500;
+    color: var(--text-color);
+    opacity: 0.8;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+/* --- Icons --- */
+.navbar-brand i, .btn i {
+    margin-right: 8px;
+}
+
+.welcome-icon {
+    font-size: 4rem;
+    color: var(--border-color);
+}
+
+.success-icon {
+    font-size: 3.5rem;
+    color: #198754; /* Success green */
+}
+
+/* --- Form Range Slider (for Tempo) --- */
+.form-range::-webkit-slider-thumb {
+  background-color: var(--accent-color);
+}
+.form-range::-moz-range-thumb {
+  background-color: var(--accent-color);
+}
+:root {
+    --bg-color: #F5F5DC;         /* A soft, light beige for the main background */
+    --ui-bg-color: #EAE0C8;      /* A slightly darker, warmer beige for UI elements like cards */
+    --text-color: #4B3832;       /* A dark, rich brown for primary text */
+    --border-color: #D3C5B3;    /* A subtle border color */
+    --accent-color: #8A6642;     /* A muted, earthy brown for buttons and highlights */
+    --accent-hover-color: #6B4F34;/* A darker shade for hover effects */
+    --light-text-color: #FFFFFF; /* White text for dark elements like buttons */
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+/* --- Navigation Bar --- */
+/* Overriding Bootstrap's dark theme for a custom beige look */
+.navbar {
+    background-color: var(--ui-bg-color) !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.navbar-brand, .navbar-brand:hover {
+    color: var(--text-color) !important;
+    font-weight: 500;
+}
+
+/* --- Card Styling --- */
+.card {
+    background-color: var(--ui-bg-color) !important;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 0.5rem; /* Slightly softer corners */
+}
+
+/* Remove default Bootstrap text color override */
+.card-title, .card-body {
+    color: var(--text-color);
+}
+
+/* --- Form Elements --- */
+.form-label {
+    font-weight: 500;
+}
+
+.form-select, .form-control {
+    background-color: var(--bg-color); /* Lighter background for forms */
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.form-select:focus, .form-control:focus {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.25rem rgba(138, 102, 66, 0.25); /* Accent color focus ring */
+}
+
+/* --- Button Styling --- */
+.btn-primary {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--light-text-color);
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    font-weight: 500;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--accent-hover-color);
+    border-color: var(--accent-hover-color);
+    color: var(--light-text-color);
+}
+
+/* --- Results Area --- */
+.alert-success {
+    background-color: #d1e7dd; /* Keeping a standard success color for clarity */
+    border-color: #badbcc;
+    color: #0f5132;
+}
+
+.btn-success {
+    background-color: #198754;
+    border-color: #198754;
+}
+/* --- Composition Card Styling --- */
+.composition-card {
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.composition-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.composition-card .card-title {
+    color: var(--accent-color);
+    font-weight: bold;
+}
+/* --- Welcome Page Styling --- */
+.welcome-card {
+    background-color: transparent;
+    border: none;
+}
+
+.list-group-item {
+    background-color: transparent;
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.list-group-item-action:hover {
+    background-color: var(--ui-bg-color);
+    color: var(--text-color);
+}
