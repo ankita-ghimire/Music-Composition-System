@@ -1,82 +1,83 @@
 import os
 import sys
-from flask import Flask, render_template, request, send_from_directory, jsonify
+from flask import Flask, render_template, request, send_from_directory, jsonify, session, redirect, url_for, flash
+from werkzeug.security import check_password_hash, generate_password_hash
 from pathlib import Path
 
-# --- Ensure backend (src/) is discoverable ---
+# --- Backend Setup ---
 backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
 if backend_path not in sys.path:
     sys.path.insert(0, backend_path)
 
 try:
     from main import generate_composition
-except ImportError:
-    print("Error: Could not import 'generate_composition' from 'src.main'.")
+    import database_manager as db
+except ImportError as e:
+    print(f"Error: Could not import a required module: {e}")
     sys.exit(1)
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_super_secret_key_change_this'
+app.config['OUTPUT_FOLDER'] = os.path.abspath(os.path.join(backend_path, 'output'))
+os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 
-# --- Configuration ---
-OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src', 'output'))
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-app.config['OUTPUT_FOLDER'] = OUTPUT_DIR
+# --- Database Initialization ---
+db.create_database()
 
 # --- Page Rendering Routes ---
 
 @app.route("/")
 def home():
-    """Renders the new welcome/landing page."""
     return render_template("home.html")
 
 @app.route("/compose")
 def compose_page():
-    """Renders the music composition interface."""
+    if 'user_id' not in session:
+        flash("You need to be logged in to compose music.", "warning")
+        return redirect(url_for('login'))
     return render_template("compose.html")
 
-@app.route("/explore")
-def explore():
-    """Renders the community exploration page."""
-    return render_template("explore.html")
+# ... (other main page routes are correct)
 
-@app.route("/my-compositions")
-def my_compositions():
-    """Renders the user's personal compositions page."""
-    return render_template("my_compositions.html")
+# --- User Authentication Routes (THIS IS THE MISSING PART) ---
 
-@app.route("/about")
-def about():
-    """Renders the about page."""
-    return render_template("about.html")
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        
+        if db.get_user_by_username(username):
+            flash("Username already exists.", "warning")
+        elif db.create_user(username, password):
+            flash("Account created successfully! Please log in.", "success")
+            return redirect(url_for('login'))
+        else:
+            flash("An error occurred. Please try again.", "danger")
+            
+    return render_template("register.html")
 
-# --- Functional Routes (Actions & Data) ---
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        user = db.get_user_by_username(username)
+        
+        # user[2] should be the password_hash column from your database
+        if user and check_password_hash(user[2], password):
+            session['user_id'] = user[0] # user[0] is the id
+            session['username'] = user[1] # user[1] is the username
+            return redirect(url_for('home'))
+        else:
+            flash("Invalid username or password.", "danger")
 
-@app.route("/compose-action", methods=["POST"])
-def compose_action():
-    """Handles the form submission from the compose page and generates music."""
-    try:
-        key_name = request.form.get("key_name", "C")
-        mode = request.form.get("mode", "major")
-        num_bars = int(request.form.get("num_bars", 4))
-        # Note: Tempo from the form is available via request.form.get("tempo")
-        # You would need to pass this to your generate_composition function to use it.
+    return render_template("login.html")
 
-        midi_filename, _ = generate_composition(key_name, mode, num_bars, auto_open=False)
-        base_midi_filename = os.path.basename(midi_filename)
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for('home'))
 
-        return jsonify({
-            "success": True,
-            "midi_url": f"/download/{base_midi_filename}"
-        })
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route("/download/<filename>")
-def download_file(filename):
-    """Serves the generated MIDI file for download."""
-    return send_from_directory(app.config['OUTPUT_FOLDER'], filename, as_attachment=True)
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+# --- (The rest of your server.py file) ---
+# ...
