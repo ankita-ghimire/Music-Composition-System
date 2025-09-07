@@ -67,3 +67,55 @@ def export_composition(melody_stream, chord_stream, output_path: Path, compositi
         import traceback
         traceback.print_exc()
         return None, None
+    
+    # In src/exporter.py
+# ... (keep your existing imports and your original export_composition function) ...
+from music21 import instrument, tempo # Make sure these are in your imports
+
+def export_ensemble_composition(melody_stream, accomp_stream, output_path: Path, 
+                              composition_name: str, lead_instrument_name: str, 
+                              accomp_instrument_name: str, bpm=120):
+    """
+    A NEW function specifically for exporting multi-part ensemble scores.
+    """
+    try:
+        # Instrument Assignment
+        if lead_instrument_name == 'flute': lead_inst = instrument.Flute()
+        elif lead_instrument_name == 'violin': lead_inst = instrument.Violin()
+        else: lead_inst = instrument.Piano()
+        
+        if accomp_instrument_name == 'guitar-acoustic': accomp_inst = instrument.AcousticGuitar()
+        else: accomp_inst = instrument.Piano()
+
+        # Part Creation
+        melody_part = stream.Part(id='melody')
+        melody_part.insert(0, lead_inst)
+        melody_part.append(clef.TrebleClef())
+        for n in melody_stream.flatten().notesAndRests: melody_part.append(n)
+
+        accomp_part = stream.Part(id='accompaniment')
+        accomp_part.insert(0, accomp_inst)
+        accomp_part.append(clef.TrebleClef())
+        for n in accomp_stream.flatten().notesAndRests: accomp_part.append(n)
+        
+        # Assemble Final Score
+        full_score = stream.Score()
+        full_score.insert(0, metadata.Metadata(title=composition_name, composer="AI Ensemble"))
+        full_score.insert(0, tempo.MetronomeMark(number=bpm))
+        full_score.insert(0, melody_part)
+        full_score.insert(0, accomp_part)
+        full_score.makeNotation(inPlace=True)
+        
+        # ... (the rest of your export logic: safe_filename, write files, return) ...
+        safe_filename = "".join(c for c in composition_name if c.isalnum() or c in (' ', '_')).rstrip().replace(' ', '_')
+        output_path.mkdir(exist_ok=True)
+        out_midi = output_path / f"{safe_filename}.mid"
+        out_xml = output_path / f"{safe_filename}.mxl"
+        full_score.write("midi", fp=str(out_midi))
+        full_score.write("musicxml", fp=str(out_xml))
+        return str(out_midi), str(out_xml)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return None, None
