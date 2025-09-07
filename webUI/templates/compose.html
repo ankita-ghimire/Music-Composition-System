@@ -4,10 +4,11 @@
 <div class="row g-4">
   <div class="col-lg-4">
     <div class="card p-3">
+        <!-- The form HTML is unchanged -->
         <h4 class="card-title text-center mb-4">Composition Controls</h4>
         <form id="compose-form">
             <h6 class="form-section-title">Basics</h6>
-            <div class="mb-3"><label for="key" class="form-label">Key</label><select class="form-select" id="key" name="key_name"><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="A">A</option><option value="B">B</option></select></div>
+            <div class="mb-3"><label for="key" class="form-label">Key</label><select class="form-select" id="key" name="key_name"><option value="C">C</option><option value-="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="A">A</option><option value="B">B</option></select></div>
             <div class="mb-3"><label for="mode" class="form-label">Mode</label><select class="form-select" id="mode" name="mode"><option value="major">Major</option><option value="minor">Minor</option></select></div>
             <div class="mb-3"><label for="instrument" class="form-label">Lead Instrument</label><select class="form-select" id="instrument" name="instrument"><option value="salamander-piano" selected>Piano</option><option value="flute">Flute</option><option value="guitar-acoustic">Acoustic Guitar</option><option value="violin">Violin</option></select></div>
             <div class="mb-3"><label for="mood" class="form-label">Mood</label><select class="form-select" id="mood" name="mood"><option value="default" selected>Default</option><option value="happy">Happy</option><option value="sad">Sad</option></select></div>
@@ -35,8 +36,7 @@
 <script>
     const form = document.getElementById('compose-form');
     const resultsArea = document.getElementById('results-area');
-    let reverb;
-    let currentParts = [];
+    let reverb, currentMidi, currentParts = [], sampler;
     
     // --- MULTI-INSTRUMENT SOUND LIBRARY ---
     const soundfontLibrary = {
@@ -84,15 +84,49 @@
         reverb = new Tone.Reverb({ decay: 2.5, wet: 0.3 }).toDestination();
     });
 
-    async function saveComposition(button) { /* ... Same save function as before ... */ }
+    async function saveComposition(button) { const details = JSON.parse(button.dataset.details);
+
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        try {
+            const response = await fetch('/save-composition', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(details)
+            });
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error);
+
+            button.innerHTML = '<i class="fas fa-check"></i> Saved!';
+            button.classList.replace('btn-info', 'btn-secondary');
+        } catch (error) {
+            button.innerHTML = 'Save Failed';
+            button.classList.replace('btn-info', 'btn-danger');
+            console.error('Save failed:', error);
+        }
+    }
+    // --- END OF saveComposition FUNCTION ---
+ // --- NEW HELPER FUNCTION TO FORMAT TIME ---
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        reverb = new Tone.Reverb({ decay: 2.5, wet: 0.3 }).toDestination();
+    });
 
     form.addEventListener('submit', async function(event) {
         event.preventDefault();
-        if (Tone.Transport.state === 'started') Tone.Transport.stop();
+        
+        if (Tone.Transport.state !== 'stopped') Tone.Transport.stop();
         currentParts.forEach(part => part.dispose());
         currentParts = [];
-        Tone.Transport.cancel();
-        
+        Tone.Transport.cancel(0);
+        Tone.Transport.position = 0;
+
         const generateBtn = document.getElementById('generate-btn');
         const formData = new FormData(form);
         const selectedInstrumentName = formData.get('instrument');
@@ -107,56 +141,101 @@
             if (!result.success) throw new Error(result.error || 'Server error');
             
             const details = result.composition_details;
-
-            // --- THIS IS THE CRITICAL FIX ---
-            // Create a user-friendly, capitalized name for the loading message.
             const prettyInstrumentName = selectedInstrumentName.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-            // --- END FIX ---
 
+            // --- NEW, POLISHED PLAYER HTML LAYOUT ---
             resultsArea.innerHTML = `
                 <div class="text-center">
                     <i class="fas fa-check-circle success-icon"></i>
                     <h4 class="mt-3">Preview Ready!</h4>
-                    <p>Listen to your new composition. If you like it, save it.</p>
-                    <div class="my-3 d-flex justify-content-center gap-2">
-                        <button id="play-pause-btn" class="btn btn-primary btn-lg" disabled>
-                            <i class="fas fa-spinner fa-spin"></i> Loading ${prettyInstrumentName}...
-                        </button>
-                        <button id="save-btn" class="btn btn-info btn-lg"
-                                data-details='${JSON.stringify(details)}'
-                                onclick="saveComposition(this)">
-                            <i class="fas fa-save"></i> Save Composition
-                        </button>
+                    <p>Listen below. If you like it, save it to your collection.</p>
+                    
+                    <div class="player-container">
+                        <div class="d-flex align-items-center gap-3">
+                            <button id="play-pause-btn" class="btn btn-primary" disabled>
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </button>
+                            <div class="progress-bar-container">
+                                <span id="current-time" class="timestamp">00:00</span>
+                                <input type="range" id="seek-slider" class="seek-slider" value="0" step="0.1" disabled>
+                                <span id="total-duration" class="timestamp">00:00</span>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <button id="save-btn" class="btn btn-info"
+                                    data-details='${JSON.stringify(details)}'
+                                    onclick="saveComposition(this)">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                            <a href="${result.download_url}" class="btn btn-success" download>
+                                <i class="fas fa-download"></i> MIDI
+                            </a>
+                        </div>
                     </div>
-                    <a href="${result.download_url}" class="btn btn-success" download><i class="fas fa-download"></i> Download MIDI</a>
                 </div>`;
             
             const playPauseBtn = document.getElementById('play-pause-btn');
+            const seekSlider = document.getElementById('seek-slider');
+            const currentTimeEl = document.getElementById('current-time');
+            const totalDurationEl = document.getElementById('total-duration');
             
+            playPauseBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Loading ${prettyInstrumentName}...`;
+
             const instrument = await getInstrument(selectedInstrumentName);
-            const midi = await Midi.fromUrl(result.midi_data_url);
+            currentMidi = await Midi.fromUrl(result.midi_data_url);
             
-            midi.tracks.forEach(track => {
+            Tone.Transport.bpm.value = currentMidi.header.tempos[0] ? currentMidi.header.tempos[0].bpm : 120;
+            totalDurationEl.textContent = formatTime(currentMidi.duration);
+            seekSlider.max = currentMidi.duration;
+
+            currentMidi.tracks.forEach(track => {
                 const part = new Tone.Part((time, note) => {
                     instrument.triggerAttackRelease(note.name, note.duration, time, note.velocity);
                 }, track.notes).start(0);
                 currentParts.push(part);
             });
 
-            playPauseBtn.innerHTML = '<i class="fas fa-play"></i> Play Preview';
+            playPauseBtn.innerHTML = '<i class="fas fa-play"></i> Play';
             playPauseBtn.disabled = false;
+            seekSlider.disabled = false;
 
+            // --- FINAL, ROBUST PLAY/PAUSE/SEEK LOGIC ---
             playPauseBtn.addEventListener('click', async () => {
                 await Tone.start();
                 if (Tone.Transport.state !== 'started') {
+                    if (Tone.Transport.seconds >= currentMidi.duration - 0.1) {
+                        Tone.Transport.position = 0;
+                    }
                     Tone.Transport.start();
-                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
                 } else {
                     Tone.Transport.pause();
+                }
+            });
+
+            Tone.Transport.on('start pause stop', () => {
+                const icon = playPauseBtn.querySelector('i');
+                if (Tone.Transport.state === 'started') {
+                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+                } else {
                     playPauseBtn.innerHTML = '<i class="fas fa-play"></i> Play';
                 }
             });
-            Tone.Transport.on('stop', () => playPauseBtn.innerHTML = '<i class="fas fa-play"></i> Play');
+
+            Tone.Transport.scheduleRepeat(() => {
+                const currentTime = Tone.Transport.seconds;
+                seekSlider.value = currentTime;
+                currentTimeEl.textContent = formatTime(currentTime);
+                // THIS IS THE BUG FIX: Manually stop when the song ends
+                if (currentTime >= currentMidi.duration) {
+                    Tone.Transport.stop();
+                }
+            }, 0.1);
+            
+            seekSlider.addEventListener('input', () => {
+                Tone.Transport.seconds = seekSlider.value;
+                currentTimeEl.textContent = formatTime(seekSlider.value);
+            });
+
         } catch (error) {
             resultsArea.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${error.message}</div>`;
         } finally {
@@ -166,5 +245,3 @@
     });
 </script>
 {% endblock %}
-
-

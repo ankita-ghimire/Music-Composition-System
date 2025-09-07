@@ -18,6 +18,13 @@
                     Mood: {{ comp['mood'].title() }} | 
                     Key: {{ comp['key'].upper() }} {{ comp['mode'] }} |
                     Created: {{ comp['timestamp'][:10] }}
+                      {% if comp['is_ensemble'] == 1 %}
+                Ensemble | Lead: {{ comp['instrument'] }} | Accomp: {{ comp['accomp_instrument'] }}
+            {% else %}
+                Solo | Instrument: {{ comp['instrument'] }}
+            {% endif %}
+            | Mood: {{ comp['mood'] }} | Key: {{ comp['key'] }}
+
                 </small>
             </div>
             <div>
@@ -26,7 +33,9 @@
                 </a>
             </div>
         </div>
-        {% endfor %}
+        
+{% endfor %}
+ 
     {% else %}
         <div class="text-center p-5 border rounded">
             <p class="lead text-muted">You haven't composed anything yet.</p>

@@ -156,3 +156,87 @@ body {
     background-color: var(--ui-bg-color);
     color: var(--text-color);
 }
+/* --- NEW: Advanced Player Styling --- */
+.player-container {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+}
+
+.player-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.progress-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+.timestamp {
+    font-family: monospace;
+    font-size: 0.9em;
+    color: var(--text-color);
+    min-width: 45px; /* Prevents layout shifts */
+}
+
+/* Custom styling for the seek bar */
+.seek-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 5px;
+    background: var(--border-color);
+    outline: none;
+    opacity: 0.7;
+    transition: opacity .2s;
+    border-radius: 5px;
+}
+
+.seek-slider:hover {
+    opacity: 1;
+}
+
+.seek-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    background: var(--accent-color);
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.seek-slider::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    background: var(--accent-color);
+    cursor: pointer;
+    border-radius: 50%;
+}
+/* --- NEW: Polished Player Button Layout --- */
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem; /* Space between the Save and MIDI buttons */
+    margin-top: 1rem;
+}
+
+/* Make the play/pause button a bit bigger to be the main focus */
+#play-pause-btn {
+    /* Set a minimum width to prevent the button from resizing when the text changes */
+    min-width: 120px; 
+    
+    /* Adjust padding for a balanced look */
+    padding: 0.5rem 1.5rem;
+    
+    /* Make the font a little larger and bolder */
+    font-size: 1.1rem;
+    font-weight: 500;
+}
