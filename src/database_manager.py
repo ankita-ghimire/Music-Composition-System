@@ -1,51 +1,83 @@
-# In src/database_manager.py
 import sqlite3
-import json # We'll store the melody/chord data as JSON text
+import json
+from pathlib import Path
+from werkzeug.security import generate_password_hash
 
-DATABASE_NAME = "compositions.db"
+DB_FILE_PATH = Path(__file__).parent.parent / "compositions.db"
 
 def create_database():
-    """Initializes the database and creates the compositions table if it doesn't exist."""
-    conn = sqlite3.connect(DATABASE_NAME)
+    """Initializes the database and creates tables with the FINAL, CORRECT schema."""
+    conn = sqlite3.connect(DB_FILE_PATH)
     cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL
+        );
+    """)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS compositions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
+            user_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            instrument TEXT DEFAULT 'salamander-piano',
+            mood TEXT DEFAULT 'default',
             melody_data TEXT NOT NULL,
             chord_data TEXT NOT NULL,
-            key TEXT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            key TEXT NOT NULL,
+            mode TEXT NOT NULL,
+            bars INTEGER NOT NULL,
+            filename TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
         );
     """)
     conn.commit()
     conn.close()
-    print("Database initialized successfully.")
+    print("Database with FINAL users and upgraded compositions tables initialized.")
 
-def save_composition(name, melody_events, chord_sequence, key):
-    """Saves a new composition to the database."""
-    conn = sqlite3.connect(DATABASE_NAME)
+def create_user(username, password):
+    conn = sqlite3.connect(DB_FILE_PATH)
     cursor = conn.cursor()
-    # Convert the Python lists to JSON strings for storage
-    melody_json = json.dumps(melody_events)
-    chords_json = json.dumps(chord_sequence) # Assuming chords will be a list of strings
-    
+    try:
+        cursor.execute(
+            "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+            (username, generate_password_hash(password))
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    finally:
+        conn.close()
+
+def get_user_by_username(username):
+    conn = sqlite3.connect(DB_FILE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+    user = cursor.fetchone()
+    conn.close()
+    return user
+
+def save_composition(user_id, title, melody_events, chord_names, key, mode, instrument, mood, bars, filename):
+    conn = sqlite3.connect(DB_FILE_PATH)
+    cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO compositions (name, melody_data, chord_data, key)
-        VALUES (?, ?, ?, ?)
-    """, (name, melody_json, chords_json, key))
-    
+        INSERT INTO compositions (user_id, title, melody_data, chord_data, key, instrument, mood, mode, bars, filename)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, title, json.dumps(melody_events), json.dumps(chord_names), key, instrument, mood, mode, bars, filename))
     conn.commit()
     conn.close()
-    print(f"Composition '{name}' saved successfully.")
 
-def load_all_compositions():
-    """Loads all saved composition names and IDs from the database."""
-    conn = sqlite3.connect(DATABASE_NAME)
+def load_compositions_for_user(user_id):
+    conn = sqlite3.connect(DB_FILE_PATH)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name, timestamp FROM compositions ORDER BY timestamp DESC")
+    cursor.execute(
+        "SELECT * FROM compositions WHERE user_id = ? ORDER BY timestamp DESC", 
+        (user_id,)
+    )
     compositions = cursor.fetchall()
     conn.close()
-    return compositions # Returns a list of (id, name, timestamp) tuples
-
-# You would also create a function like load_composition_by_id(id) later
+    return compositions
