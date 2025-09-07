@@ -55,3 +55,27 @@ def generate_chords(key_root: str, mode: str, num_bars: int, mood: str = 'defaul
         
     return chord_stream
 
+# --- We now have only ONE chord generator function for simplicity ---
+# The old generate_structured_chords is no longer needed.
+# We control the behavior with the 'is_structured' flag.
+
+# In src/chord_generator.py
+
+# --- ADD THIS NEW FUNCTION AT THE END OF THE FILE ---
+
+def create_stream_from_custom_progression(chord_names: list) -> stream.Stream:
+    """
+    Takes a list of chord name strings from the user and converts
+    it into a music21 Stream of Chord objects.
+    """
+    from music21 import stream, chord # Local import
+    
+    custom_chord_stream = stream.Stream()
+    for name in chord_names:
+        try:
+            new_chord = chord.Chord(name)
+            new_chord.duration.quarterLength = 4.0
+            custom_chord_stream.append(new_chord)
+        except Exception:
+            print(f"Warning: Could not parse chord name '{name}'.")
+    return custom_chord_stream
