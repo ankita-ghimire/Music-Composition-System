@@ -5,7 +5,8 @@
 <div class="row g-4">
     <!-- Main Welcome Message Area -->
     <div class="col-lg-8">
-        <div class="card p-4 p-md-5 text-center welcome-card">
+        <div class="card p-4 p-md-5 text-center welcome-card position-relative">
+           
             <h1 class="display-4">AI-Powered Music Composition</h1>
             <p class="lead my-4">
                 Bring your musical ideas to life. Our intelligent system generates unique melodies and harmonies tailored to your specifications. No musical experience required.
@@ -35,4 +36,47 @@
         </div>
     </div>
 </div>
-{% endblock %}```
+
+<!-- 🚀 New Feature Section: Choose Composition Type -->
+<div class="row g-4 mt-5">
+    <div class="col-12 text-center">
+        <h2 class="mb-4">Welcome! Choose Your Music Journey 🎼</h2>
+    </div>
+
+    <!-- Compose Solo -->
+    <div class="col-md-4">
+        <div class="card h-100 text-center shadow-sm">
+            <div class="card-body">
+                <i class="fas fa-music fa-3x mb-3 text-primary"></i>
+                <h5 class="card-title">Compose Solo</h5>
+                <p class="card-text">Generate unique solo pieces powered by AI melodies.</p>
+                <a href="{{ url_for('compose_page') }}" class="btn btn-outline-primary">Start Solo</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ensemble -->
+    <div class="col-md-4">
+        <div class="card h-100 text-center shadow-sm">
+            <div class="card-body">
+                <i class="fas fa-guitar fa-3x mb-3 text-success"></i>
+                <h5 class="card-title">Ensemble</h5>
+                <p class="card-text">Combine instruments to create a rich ensemble composition.</p>
+                <a href="{{ url_for('ensemble_page') }}" class="btn btn-outline-success">Start Ensemble</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chord Mix -->
+    <div class="col-md-4">
+        <div class="card h-100 text-center shadow-sm">
+            <div class="card-body">
+                <i class="fas fa-sliders-h fa-3x mb-3 text-warning"></i>
+                <h5 class="card-title">Chord Mix</h5>
+                <p class="card-text">Experiment with chord keys and generate harmonized music.</p>
+                <a href="{{ url_for('custom_page') }}" class="btn btn-outline-warning">Start Chord Mix</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,52 +1,57 @@
 # In src/chord_generator.py
-# FINAL, COMPLETE, AND BUG-FIXED VERSION
-import copy # <-- IMPORT THE COPY LIBRARY
-from music21 import stream, chord, key
+# FINAL, BRUTALLY SIMPLE, AND VERIFIED VERSION
 
-def get_major_triads(scale_obj):
-    """Builds major chords by getting each pitch individually from the scale."""
-    return {
-        "I": chord.Chord([scale_obj.pitchFromDegree(1), scale_obj.pitchFromDegree(3), scale_obj.pitchFromDegree(5)]),
-        "IV": chord.Chord([scale_obj.pitchFromDegree(4), scale_obj.pitchFromDegree(6), scale_obj.pitchFromDegree(1).transpose('P8')]),
-        "V": chord.Chord([scale_obj.pitchFromDegree(5), scale_obj.pitchFromDegree(7), scale_obj.pitchFromDegree(2).transpose('P8')]),
-        "vi": chord.Chord([scale_obj.pitchFromDegree(6), scale_obj.pitchFromDegree(1).transpose('P8'), scale_obj.pitchFromDegree(3).transpose('P8')])
-    }
+import random
+import copy
+from music21 import stream, chord, key, interval
 
-def get_minor_triads(scale_obj):
-    """Builds minor chords by getting each pitch individually from the scale."""
-    return {
-        "i": chord.Chord([scale_obj.pitchFromDegree(1), scale_obj.pitchFromDegree(3), scale_obj.pitchFromDegree(5)]),
-        "iv": chord.Chord([scale_obj.pitchFromDegree(4), scale_obj.pitchFromDegree(6), scale_obj.pitchFromDegree(1).transpose('P8')]),
-        "v": chord.Chord([scale_obj.pitchFromDegree(5), scale_obj.pitchFromDegree(7), scale_obj.pitchFromDegree(2).transpose('P8')]),
-        "VI": chord.Chord([scale_obj.pitchFromDegree(6), scale_obj.pitchFromDegree(1).transpose('P8'), scale_obj.pitchFromDegree(3).transpose('P8')])
-    }
-
-def generate_chords(key_root: str, mode: str, num_bars: int, mood: str = 'default') -> stream.Stream:
-    """Generates a chord progression as a music21 Stream object."""
+def generate_chords(key_root: str, mode: str, num_bars: int, mood: str = 'default', is_structured=False) -> stream.Stream:
+    """
+    This is the single, unified chord generator. It produces standard, reliable
+    chord.Chord objects to guarantee compatibility with the arranger.
+    """
+    # 1. Determine the final mode based on mood
     final_mode = mode
     if mood == 'happy': final_mode = 'major'
     elif mood == 'sad': final_mode = 'minor'
-    
-    k = key.Key(key_root, final_mode)
-    
+
+    # 2. Define the chord progressions in a base key (C Major / A minor)
+    #    This is the most reliable way to create standard Chord objects.
     if final_mode == 'major':
-        chords_dict = get_major_triads(k)
-        template = ["I", "V", "vi", "IV"]
+        verse_base = [chord.Chord("C E G"), chord.Chord("G B D"), chord.Chord("A C E"), chord.Chord("F A C")]
+        chorus_base = [chord.Chord("F A C"), chord.Chord("C E G"), chord.Chord("G B D"), chord.Chord("A C E")]
+        simple_base = verse_base
+        source_key_tonic = 'C'
     else: # minor
-        chords_dict = get_minor_triads(k)
-        template = ["i", "VI", "iv", "v"]
+        verse_base = [chord.Chord("A C E"), chord.Chord("F A C"), chord.Chord("D F A"), chord.Chord("E G B")]
+        chorus_base = [chord.Chord("D F A"), chord.Chord("E G B"), chord.Chord("A C E"), chord.Chord("F A C")]
+        simple_base = verse_base
+        source_key_tonic = 'a'
 
+    # 3. Transpose these reliable chords to the user's desired key
+    target_key = key.Key(key_root, final_mode)
+    transposition_interval = interval.Interval(key.Key(source_key_tonic).tonic, target_key.tonic)
+    
+    verse_prog = [c.transpose(transposition_interval) for c in verse_base]
+    chorus_prog = [c.transpose(transposition_interval) for c in chorus_base]
+    simple_prog = [c.transpose(transposition_interval) for c in simple_base]
+
+    # 4. Build the final stream
     chord_stream = stream.Stream()
+    
     for i in range(num_bars):
-        symbol = template[i % len(template)]
+        section_index = i % 4
         
-        # --- THE CRITICAL FIX ---
-        # Instead of referencing the original chord, we create a deep copy of it.
-        # This gives us a brand new object with a new memory ID for each bar.
-        new_chord = copy.deepcopy(chords_dict[symbol])
-        # --- END FIX ---
-
+        # Use the structured progression if requested, otherwise the simple one
+        if is_structured:
+            if (i // 4) % 2 == 0: current_prog = verse_prog
+            else: current_prog = chorus_prog
+        else:
+            current_prog = simple_prog
+            
+        new_chord = copy.deepcopy(current_prog[section_index])
         new_chord.duration.quarterLength = 4.0
         chord_stream.append(new_chord)
-
+        
     return chord_stream
+

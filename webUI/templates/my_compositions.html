@@ -4,38 +4,51 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>My Compositions</h2>
-    <a href="{{ url_for('compose_page') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Create New</a>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('compose_page') }}" class="btn btn-primary"><i class="fas fa-music"></i> New Solo Piece</a>
+        <a href="{{ url_for('ensemble_page') }}" class="btn btn-info"><i class="fas fa-users"></i> New Ensemble Piece</a>
+    </div>
 </div>
 
 <div class="list-group">
     {% if compositions %}
         {% for comp in compositions %}
-        <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-            <div>
+        <div class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
                 <h5 class="mb-1">{{ comp['title'] }}</h5>
-                <small class="text-muted">
-                    Instrument: {{ comp['instrument'].replace('-', ' ').title() }} | 
-                    Mood: {{ comp['mood'].title() }} | 
-                    Key: {{ comp['key'].upper() }} {{ comp['mode'] }} |
-                    Created: {{ comp['timestamp'][:10] }}
-                      {% if comp['is_ensemble'] == 1 %}
-                Ensemble | Lead: {{ comp['instrument'] }} | Accomp: {{ comp['accomp_instrument'] }}
-            {% else %}
-                Solo | Instrument: {{ comp['instrument'] }}
-            {% endif %}
-            | Mood: {{ comp['mood'] }} | Key: {{ comp['key'] }}
-
-                </small>
+                <small class="text-muted">{{ comp['timestamp'][:10] }}</small>
             </div>
-            <div>
-                <a href="{{ url_for('download_file', filename=comp['filename']) }}" class="btn btn-sm btn-outline-secondary me-2">
-                    <i class="fas fa-download"></i> MIDI
-                </a>
+            <p class="mb-1 text-muted">
+                <!-- NEW, CLEANED UP DISPLAY LOGIC -->
+                {% if comp['is_ensemble'] == 1 %}
+                    <strong>Ensemble</strong> | Lead: {{ comp['instrument'].replace('-', ' ').title() }} | Accomp: {{ comp['accomp_instrument'].replace('-', ' ').title() }}
+                {% else %}
+                    <strong>Solo</strong> | Instrument: {{ comp['instrument'].replace('-', ' ').title() }}
+                {% endif %}
+                | Mood: {{ comp['mood'].title() }} | Key: {{ comp['key'].upper() }} {{ comp['mode'] }}
+            </p>
+            <div class="d-flex align-items-center gap-2 mt-2">
+                <!-- NEW PLAYER BUTTON -->
+                <button class="btn btn-sm btn-primary play-btn" 
+                        data-comp-id="{{ comp['id'] }}"
+                        data-instrument="{{ comp['instrument'] }}">
+                    <i class="fas fa-play"></i> Play
+                </button>
+                <!-- NEW DOWNLOAD DROPDOWN -->
+                <div class="btn-group">
+                    <a href="{{ url_for('download_file', filename=comp['filename_midi']) }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-download"></i> Audio (.mid)
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="visually-hidden">Toggle Dropdown</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('download_file', filename=comp['filename_xml']) }}">Sheet Music (.mxl)</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
-        
-{% endfor %}
- 
+        {% endfor %}
     {% else %}
         <div class="text-center p-5 border rounded">
             <p class="lead text-muted">You haven't composed anything yet.</p>
@@ -43,5 +56,119 @@
         </div>
     {% endif %}
 </div>
-{% endblock %}```
+{% endblock %}
 
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let sampler, reverb;
+    let currentPlayingId = null;
+    let currentParts = [];
+    
+    // This library should be comprehensive enough for the listed instruments
+    // --- MULTI-INSTRUMENT SOUND LIBRARY ---
+    const soundfontLibrary = {
+        'salamander-piano': {
+            baseUrl: "/static/soundfonts/salamander-piano/",
+            notes: { 'A3':'A3.mp3', 'A4':'A4.mp3', 'A5':'A5.mp3', 'C3':'C3.mp3',  'C4':'C4.mp3', 'C5':'C5.mp3', 'D#3':'Ds3.mp3', 'D#4':'Ds4.mp3', 'D#5':'Ds5.mp3', 'F#3':'Fs3.mp3', 'F#4':'Fs4.mp3', 'F#5':'Fs5.mp3' }
+        },
+        'flute': {
+            baseUrl: "/static/soundfonts/flute/",
+            notes: { 'A4':'A4 (1).mp3', 'A5':'A5 (1).mp3', 'A6':'A6.mp3', 'C4':'C4 (1).mp3','C5':'C5 (1).mp3','C6':'C6.mp3','E4':'E4.mp3', 'E5':'E5.mp3', 'E6':'E6.mp3' }
+        },
+        'guitar-acoustic': {
+            baseUrl: "/static/soundfonts/guitar-acoustic/",
+            notes: { 'A2':'A2.mp3', 'A3':'A3.mp3', 'A4':'A4.mp3', 'A#2':'As2.mp3', 'A#3':'As3.mp3', 'B3':'B3.mp3', 'B4':'B4.mp3', 'C3':'C3.mp3', 'C4':'C4.mp3', 'C5':'C5.mp3', 'C#3':'Cs3.mp3', 'C#4':'Cs4.mp3', 'C#5':'Cs5.mp3', 'D2':'D2.mp3', 'D3':'D3.mp3', 'D4':'D4.mp3', 'D5':'D5.mp3',  'D#2':'Ds2.mp3', 'D#3':'Ds3.mp3', 'D#4':'Ds4.mp3', 'E2':'E2.mp3', 'E3':'E3.mp3',  'E4':'E4.mp3', 'F2':'F2.mp3', 'F3':'F3.mp3', 'F4':'F4.mp3',  'F#2':'Fs2.mp3', 'F#3':'Fs3.mp3', 'F#4':'Fs4.mp3', 'G2':'G2.mp3', 'G3':'G3.mp3', 'G4':'G4.mp3', 'G#2':'Gs2.mp3', 'G#3':'Gs3.mp3', 'G#4':'Gs4.mp3' }
+        },
+        'violin': {
+            baseUrl: "/static/soundfonts/violin/",
+            notes: { 'A3':'A3 (1).mp3', 'A4':'A4 (1).mp3', 'A5':'A5.mp3', 'A6':'A6.mp3', 'C4':'C4.mp3', 'C5':'C5.mp3', 'C6':'C6.mp3', 'C7':'C7.mp3', 'E4':'E4.mp3', 'E5':'E5.mp3', 'E6':'E6.mp3', 'G4':'G4.mp3', 'G5':'G5.mp3', 'G6':'G6.mp3' }
+        }
+    };
+    const loadedSamplers = {};
+
+    async function getInstrument(instrumentName) {
+        if (loadedSamplers[instrumentName]) {
+            return loadedSamplers[instrumentName];
+        }
+        const config = soundfontLibrary[instrumentName] || soundfontLibrary['salamander-piano'];
+        const sampler = new Tone.Sampler({
+            urls: config.notes,
+            baseUrl: config.baseUrl,
+        }).connect(reverb);
+        await Tone.loaded();
+        loadedSamplers[instrumentName] = sampler;
+        return sampler;
+    }
+
+    document.querySelectorAll('.play-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const compId = this.dataset.compId;
+            const instrumentName = this.dataset.instrument;
+            
+            // --- Reset other buttons ---
+            document.querySelectorAll('.play-btn').forEach(btn => {
+                if (btn !== this) btn.innerHTML = '<i class="fas fa-play"></i> Play';
+            });
+            
+            if (currentPlayingId === compId && Tone.Transport.state === 'started') {
+                Tone.Transport.stop();
+                return;
+            }
+            
+            if (Tone.Transport.state !== 'stopped') Tone.Transport.stop();
+            currentParts.forEach(part => part.dispose());
+            currentParts = [];
+            Tone.Transport.cancel(0);
+            Tone.Transport.position = 0;
+
+            currentPlayingId = compId;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading';
+
+            try {
+                await Tone.start();
+                if (!reverb) reverb = new Tone.Reverb({ decay: 2.5, wet: 0.3 }).toDestination();
+                
+                const instrument = await getInstrument(instrumentName);
+                
+                // Fetch the specific MIDI file for this composition
+                const response = await fetch(`/play-midi/${compId}`);
+                if (!response.ok) throw new Error('Failed to fetch MIDI file.');
+                
+                const arrayBuffer = await response.arrayBuffer();
+                const midi = new Midi(arrayBuffer);
+                
+                Tone.Transport.bpm.value = midi.header.tempos[0] ? midi.header.tempos[0].bpm : 120;
+
+                midi.tracks.forEach(track => {
+                    const part = new Tone.Part((time, note) => {
+                        instrument.triggerAttackRelease(note.name, note.duration, time, note.velocity);
+                    }, track.notes).start(0);
+                    currentParts.push(part);
+                });
+                
+                Tone.Transport.start();
+                this.innerHTML = '<i class="fas fa-pause"></i> Pause';
+
+                Tone.Transport.on('stop', () => {
+                    this.innerHTML = '<i class="fas fa-play"></i> Play';
+                    currentPlayingId = null;
+                    Tone.Transport.position = 0;
+                });
+
+                Tone.Transport.scheduleRepeat(() => {
+                    if (Tone.Transport.seconds >= midi.duration) {
+                        Tone.Transport.stop();
+                    }
+                }, 0.1);
+
+            } catch (error) {
+                console.error("Error playing MIDI:", error);
+                this.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error';
+                currentPlayingId = null;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

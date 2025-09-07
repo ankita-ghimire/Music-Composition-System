@@ -10,62 +10,60 @@
    
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg shadow-sm">
-      <!-- User Authentication Links -->
-<ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-    {% if session['user_id'] %}
+   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <!-- Left side: Logo -->
+    <a class="navbar-brand" href="{{ url_for('home') }}">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" height="40">
+    </a>
+
+    <!-- Mobile toggle -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Center links -->
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
         <li class="nav-item">
-            <span class="navbar-text me-2">Welcome, {{ session['username'] }}!</span>
+          <a class="nav-link" href="{{ url_for('compose_page') }}">Compose</a>
         </li>
         <li class="nav-item">
-            <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">Logout</a>
-        </li>
-    {% else %}
-        <li class="nav-item">
-            <a href="{{ url_for('login') }}" class="btn btn-primary me-2">Login</a>
+          <a class="nav-link" href="{{ url_for('ensemble_page') }}">Ensemble</a>
         </li>
         <li class="nav-item">
-            <a href="{{ url_for('register') }}" class="btn btn-secondary">Register</a>
+          <a class="nav-link" href="#">Chord Mix</a> <!-- You can link later -->
         </li>
-    {% endif %}
-</ul>
-        <div class="container-fluid">
-            <!-- This now correctly points to the new home function -->
-            <a class="navbar-brand" href="{{ url_for('home') }}">
-                <i class="fas fa-music"></i>
-                Music Composer
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <!-- Main Navigation Links - ALL UPDATED -->
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('compose_page') }}">Compose</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('explore') }}">Explore</a>
-                    </li>
-                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('my_compositions') }}">My Compositions</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('about') }}">About</a>
-                    </li>
-                </ul>
-                <!-- User Authentication Links (no changes needed here) -->
-                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a href="#" class="btn btn-outline-secondary">Login</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('explore') }}">Explore</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('about') }}">About</a>
+        </li>
+      </ul>
+
+      <!-- Right side: Login/Register OR Logout -->
+      <ul class="navbar-nav">
+        {% if 'user_id' in session %}
+          <li class="nav-item">
+            <span class="navbar-text me-2">Hi, {{ session['username'] }}</span>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-outline-light" href="{{ url_for('logout') }}">Logout</a>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="btn btn-outline-light me-2" href="{{ url_for('login') }}">Login</a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-primary" href="{{ url_for('register') }}">Register</a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
 
     <main class="container my-5">
         {% block content %}{% endblock %}
@@ -80,5 +78,27 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi"></script>
 {% block scripts %}{% endblock %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const container = document.getElementById("music-animation");
+    const notes = ["🎵", "🎶", "🎼", "🎹", "🎷", "🎻"]; // random note emojis
+
+    function createNote() {
+        const note = document.createElement("span");
+        note.className = "note";
+        note.textContent = notes[Math.floor(Math.random() * notes.length)];
+        note.style.left = Math.random() * 90 + "%"; // random horizontal position
+        note.style.fontSize = (Math.random() * 1.5 + 1) + "rem"; // varied size
+        container.appendChild(note);
+
+        // remove after animation
+        setTimeout(() => note.remove(), 6000);
+    }
+
+    // spawn new note every 700ms
+    setInterval(createNote, 700);
+});
+</script>
+
 </body>
 </html>

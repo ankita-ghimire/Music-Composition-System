@@ -1,14 +1,15 @@
 import sqlite3
-import json
 from pathlib import Path
 from werkzeug.security import generate_password_hash
 
+# The database file will be created in the project's root folder.
 DB_FILE_PATH = Path(__file__).parent.parent / "compositions.db"
 
 def create_database():
     """Initializes the database and creates tables with the FINAL, CORRECT schema."""
     conn = sqlite3.connect(DB_FILE_PATH)
     cursor = conn.cursor()
+    # --- Users Table ---
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,28 +17,32 @@ def create_database():
             password_hash TEXT NOT NULL
         );
     """)
+    # --- Compositions Table (with all necessary columns for all features) ---
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS compositions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             title TEXT NOT NULL,
-            instrument TEXT DEFAULT 'salamander-piano',
-            mood TEXT DEFAULT 'default',
-            melody_data TEXT NOT NULL,
-            chord_data TEXT NOT NULL,
             key TEXT NOT NULL,
             mode TEXT NOT NULL,
             bars INTEGER NOT NULL,
-            filename TEXT NOT NULL,
+            filename_midi TEXT NOT NULL,
+            filename_xml TEXT NOT NULL,
+            instrument TEXT NOT NULL,
+            accomp_instrument TEXT,
+            is_ensemble INTEGER NOT NULL DEFAULT 0,
+            mood TEXT NOT NULL,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
         );
     """)
     conn.commit()
     conn.close()
-    print("Database with FINAL users and upgraded compositions tables initialized.")
+    print("Database with FINAL users and ENSEMBLE compositions tables initialized.")
 
+# --- User Management Functions ---
 def create_user(username, password):
+    """Creates a new user with a hashed password."""
     conn = sqlite3.connect(DB_FILE_PATH)
     cursor = conn.cursor()
     try:
@@ -53,6 +58,7 @@ def create_user(username, password):
         conn.close()
 
 def get_user_by_username(username):
+    """Retrieves a user's data by their username."""
     conn = sqlite3.connect(DB_FILE_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
@@ -60,24 +66,34 @@ def get_user_by_username(username):
     conn.close()
     return user
 
-def save_composition(user_id, title, melody_events, chord_names, key, mode, instrument, mood, bars, filename):
+# --- Composition Management Functions ---
+def save_composition(user_id, title, key, mode, bars, filename_midi, filename_xml, instrument, mood, is_ensemble, accomp_instrument):
+    """Saves a composition, correctly handling both solo and ensemble types."""
     conn = sqlite3.connect(DB_FILE_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO compositions (user_id, title, melody_data, chord_data, key, instrument, mood, mode, bars, filename)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (user_id, title, json.dumps(melody_events), json.dumps(chord_names), key, instrument, mood, mode, bars, filename))
+        INSERT INTO compositions (user_id, title, key, mode, bars, filename_midi, filename_xml, instrument, mood, is_ensemble, accomp_instrument)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, title, key, mode, bars, filename_midi, filename_xml, instrument, mood, is_ensemble, accomp_instrument))
     conn.commit()
     conn.close()
 
 def load_compositions_for_user(user_id):
+    """Loads all compositions for a user, allowing access to columns by name."""
     conn = sqlite3.connect(DB_FILE_PATH)
-    conn.row_factory = sqlite3.Row
+    conn.row_factory = sqlite3.Row # This is important for the templates!
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM compositions WHERE user_id = ? ORDER BY timestamp DESC", 
-        (user_id,)
-    )
+    cursor.execute("SELECT * FROM compositions WHERE user_id = ? ORDER BY timestamp DESC", (user_id,))
     compositions = cursor.fetchall()
     conn.close()
     return compositions
+
+def get_composition_by_id(comp_id, user_id):
+    """Fetches a single composition to ensure the user owns it (for the play button)."""
+    conn = sqlite3.connect(DB_FILE_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM compositions WHERE id = ? AND user_id = ?", (comp_id, user_id))
+    composition = cursor.fetchone()
+    conn.close()
+    return composition

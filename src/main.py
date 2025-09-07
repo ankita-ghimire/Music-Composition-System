@@ -42,7 +42,7 @@ def open_in_musescore(file_path: str):
         except Exception:
             print(f"⚠️ Failed to open file.")
 
-def main_test():
+def main_test(run_from_web=False):
     """Final, runnable function for testing the full AI pipeline with all features."""
     print("=== Music Composition System (Full Backend Test) ===\n")
     
@@ -82,10 +82,10 @@ def main_test():
         bpm=tempo_bpm
     )
     
-    if xml_filepath:
+    if xml_filepath and not run_from_web:
         print("\n--- Backend Test Complete ---")
         open_in_musescore(xml_filepath)
-    else:
+    elif not xml_filepath:
         print("\n--- Backend Test Failed ---")
 
 if __name__ == "__main__":
