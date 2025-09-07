@@ -1,13 +1,25 @@
+# In .gitignore
+
 # Virtual Environment
 .venv/
-venv/
+
+# Python cache files
+__pycache__/
+
+# Database files
+*.db
+
+# Large datasets - DO NOT TRACK
+training_data/  # <-- ADD THIS LINE
 
 # Generated music files
 output/
 
-# Python cache files
-__pycache__/
-*.pyc
+# macOS system files
+.DS_Store
+# Ignore heavy training data
+src/training_data/
 
-# VSCode settings
-.vscode/
+# Ignore heavy soundfonts
+webUI/static/soundfonts/
+!webUI/static/soundfonts/README.md
