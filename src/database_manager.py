@@ -29,6 +29,8 @@ def create_database():
             mode TEXT NOT NULL,
             bars INTEGER NOT NULL,
             filename TEXT NOT NULL,
+            is_ensemble INTEGER DEFAULT 0, -- 0 for solo, 1 for ensemble
+            accomp_instrument TEXT,        -- Will be NULL for solo pieces
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
         );
@@ -70,14 +72,54 @@ def save_composition(user_id, title, melody_events, chord_names, key, mode, inst
     conn.commit()
     conn.close()
 
-def load_compositions_for_user(user_id):
+
+def save_ensemble_composition(user_id, title, melody_events, chord_names, key, mode, 
+                              lead_instrument, accomp_instrument, mood, bars, filename):
+    """
+    Saves a new ENSEMBLE composition to the database.
+    """
     conn = sqlite3.connect(DB_FILE_PATH)
-    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM compositions WHERE user_id = ? ORDER BY timestamp DESC", 
-        (user_id,)
-    )
+    
+    melody_json = json.dumps(melody_events)
+    chords_json = json.dumps(chord_names)
+    
+    cursor.execute("""
+        INSERT INTO compositions (
+            user_id, title, melody_data, chord_data, key, mode, 
+            instrument, mood, bars, filename,
+            is_ensemble, accomp_instrument
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        user_id, title, melody_json, chords_json, key, mode,
+        lead_instrument, mood, bars, filename,
+        1, # Set is_ensemble to 1 (True) for this piece
+        accomp_instrument
+    ))
+    conn.commit()
+    conn.close()
+
+
+
+def load_compositions_for_user(user_id):
+    """
+    Loads all compositions for a user, now including ensemble-specific data.
+    """
+    conn = sqlite3.connect(DB_FILE_PATH)
+    # Using sqlite3.Row allows us to access columns by name (e.g., comp['title'])
+    conn.row_factory = sqlite3.Row 
+    cursor = conn.cursor()
+    
+    # Select all the new columns
+    cursor.execute("""
+        SELECT id, title, key, mode, timestamp, 
+               instrument, accomp_instrument, is_ensemble, mood
+        FROM compositions 
+        WHERE user_id = ? 
+        ORDER BY timestamp DESC
+    """, (user_id,))
+    
     compositions = cursor.fetchall()
     conn.close()
     return compositions

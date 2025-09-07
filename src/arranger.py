@@ -4,6 +4,7 @@ from music21 import stream, note
 def create_arpeggiated_accompaniment(chord_stream: stream.Stream) -> stream.Part:
     """
     Takes a stream of chords and creates a simple arpeggiated accompaniment Part.
+    This is the "brain" of the ensemble's harmony player.
     """
     accomp_part = stream.Part()
     arpeggio_pattern = [0, 1, 2, 1] # Root, Third, Fifth, Third

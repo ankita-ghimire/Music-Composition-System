@@ -68,17 +68,20 @@ def export_composition(melody_stream, chord_stream, output_path: Path, compositi
         traceback.print_exc()
         return None, None
     
-    # In src/exporter.py
-# ... (keep your existing imports and your original export_composition function) ...
-from music21 import instrument, tempo # Make sure these are in your imports
+   # In src/exporter.py
+# ... (keep all your existing code: the original export_composition function) ...
 
+# --- ADD THIS ENTIRE NEW FUNCTION ---
 def export_ensemble_composition(melody_stream, accomp_stream, output_path: Path, 
                               composition_name: str, lead_instrument_name: str, 
                               accomp_instrument_name: str, bpm=120):
     """
     A NEW function specifically for exporting multi-part ensemble scores.
+    It does not affect the original export_composition function.
     """
     try:
+        print("Assembling ENSEMBLE score for export...")
+        
         # Instrument Assignment
         if lead_instrument_name == 'flute': lead_inst = instrument.Flute()
         elif lead_instrument_name == 'violin': lead_inst = instrument.Violin()
@@ -106,13 +109,15 @@ def export_ensemble_composition(melody_stream, accomp_stream, output_path: Path,
         full_score.insert(0, accomp_part)
         full_score.makeNotation(inPlace=True)
         
-        # ... (the rest of your export logic: safe_filename, write files, return) ...
+        # File Export Logic (same as before)
         safe_filename = "".join(c for c in composition_name if c.isalnum() or c in (' ', '_')).rstrip().replace(' ', '_')
         output_path.mkdir(exist_ok=True)
         out_midi = output_path / f"{safe_filename}.mid"
         out_xml = output_path / f"{safe_filename}.mxl"
         full_score.write("midi", fp=str(out_midi))
         full_score.write("musicxml", fp=str(out_xml))
+        
+        print(f"✅ Ensemble composition exported successfully!")
         return str(out_midi), str(out_xml)
 
     except Exception as e:
