@@ -144,6 +144,7 @@
             const prettyInstrumentName = selectedInstrumentName.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
 
             // --- NEW, POLISHED PLAYER HTML LAYOUT ---
+         // --- UPGRADED PLAYER HTML WITH DOWNLOAD DROPDOWN ---
             resultsArea.innerHTML = `
                 <div class="text-center">
                     <i class="fas fa-check-circle success-icon"></i>
@@ -151,11 +152,11 @@
                     <p>Listen below. If you like it, save it to your collection.</p>
                     
                     <div class="player-container">
-                        <div class="d-flex align-items-center gap-3">
+                        <div class="player-top-row">
                             <button id="play-pause-btn" class="btn btn-primary" disabled>
                                 <i class="fas fa-spinner fa-spin"></i>
                             </button>
-                            <div class="progress-bar-container">
+                            <div class="progress-bar-container w-100">
                                 <span id="current-time" class="timestamp">00:00</span>
                                 <input type="range" id="seek-slider" class="seek-slider" value="0" step="0.1" disabled>
                                 <span id="total-duration" class="timestamp">00:00</span>
@@ -167,9 +168,18 @@
                                     onclick="saveComposition(this)">
                                 <i class="fas fa-save"></i> Save
                             </button>
-                            <a href="${result.download_url}" class="btn btn-success" download>
-                                <i class="fas fa-download"></i> MIDI
-                            </a>
+                            <!-- NEW DOWNLOAD DROPDOWN -->
+                            <div class="btn-group">
+                                <a href="${result.download_url_midi}" class="btn btn-success">
+                                    <i class="fas fa-download"></i> Audio (.mid)
+                                </a>
+                                <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle Dropdown</span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="${result.download_url_xml}">Sheet Music (.mxl)</a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>`;

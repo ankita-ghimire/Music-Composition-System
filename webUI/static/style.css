@@ -41,7 +41,7 @@
   background-color: var(--accent-color);
 }
 :root {
-    --bg-color: #F5F5DC;         /* A soft, light beige for the main background */
+    --bg-color: #fffff5;         /* A soft, light beige for the main background */
     --ui-bg-color: #EAE0C8;      /* A slightly darker, warmer beige for UI elements like cards */
     --text-color: #4B3832;       /* A dark, rich brown for primary text */
     --border-color: #D3C5B3;    /* A subtle border color */
@@ -57,15 +57,6 @@ body {
 
 /* --- Navigation Bar --- */
 /* Overriding Bootstrap's dark theme for a custom beige look */
-.navbar {
-    background-color: var(--ui-bg-color) !important;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.navbar-brand, .navbar-brand:hover {
-    color: var(--text-color) !important;
-    font-weight: 500;
-}
 
 /* --- Card Styling --- */
 .card {
@@ -251,7 +242,65 @@ body {
     animation: floatUp 6s linear infinite;
     color: #6c63ff; /* nice purple-blue tone */
 }
+/* --- NEW: Polished Navigation Bar Styling --- */
 
+/* 1. Make the Logo/Brand bigger and bolder */
+.navbar-brand {
+    font-size: 1.8rem; /* Increase font size */
+    font-weight: 600 !important; /* Make it a bit bolder */
+}
+
+/* 2. Style the navigation links */
+.navbar .nav-link {
+    color: var(--text-color) !important; /* Use your dark brown theme color */
+    font-weight: 500;
+    opacity: 0.7;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* Add a hover effect for the links */
+.navbar .nav-link:hover {
+    opacity: 1.0;
+}
+
+/* 3. Custom styles for Login and Register buttons */
+.btn-login {
+    background-color: var(--accent-color) !important; /* Your theme's brown */
+    border-color: var(--accent-color) !important;
+    color: var(--light-text-color) !important; /* White text */
+}
+.btn-login:hover {
+    background-color: var(--accent-hover-color) !important;
+    border-color: var(--accent-hover-color) !important;
+}
+
+.btn-register {
+    background-color: #5bc0de !important; /* A nice sky blue */
+    border-color: #46b8da !important;
+    color: var(--light-text-color) !important;
+}
+.btn-register:hover {
+    background-color: #31b0d5 !important;
+    border-color: #269abc !important;
+}
+/* This rule will now apply the correct color */
+.navbar {
+    background-color: var(--ui-bg-color) !important; /* Your theme's beige */
+    border-bottom: 1px solid var(--border-color);
+}
+/* --- NEW: Image Logo Sizing --- */
+
+/* This rule targets the IMAGE inside your logo link */
+.navbar-brand img {
+    height: 60px; /* <-- SET YOUR DESIRED LOGO HEIGHT HERE */
+    width: auto;  /* This automatically adjusts the width to maintain the correct aspect ratio */
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Optional: A subtle hover effect for the logo */
+.navbar-brand:hover img {
+    transform: scale(1.05);
+}
 
 
 

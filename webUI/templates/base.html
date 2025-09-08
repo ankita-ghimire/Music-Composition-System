@@ -10,11 +10,12 @@
    
 </head>
 <body>
-   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+   <!-- THIS IS THE NEW, CORRECT LINE -->
+<nav class="navbar navbar-expand-lg shadow-sm">
   <div class="container-fluid">
     <!-- Left side: Logo -->
     <a class="navbar-brand" href="{{ url_for('home') }}">
-      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" height="40">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
     </a>
 
     <!-- Mobile toggle -->
@@ -27,6 +28,9 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
         <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="{{ url_for('compose_page') }}">Compose</a>
         </li>
         <li class="nav-item">
@@ -36,31 +40,33 @@
           <a class="nav-link" href="#">Chord Mix</a> <!-- You can link later -->
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('explore') }}">Explore</a>
+          <a class="nav-link" href="{{ url_for('my_compositions') }}">My composition</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('about') }}">About</a>
         </li>
       </ul>
 
-      <!-- Right side: Login/Register OR Logout -->
-      <ul class="navbar-nav">
-        {% if 'user_id' in session %}
-          <li class="nav-item">
-            <span class="navbar-text me-2">Hi, {{ session['username'] }}</span>
-          </li>
-          <li class="nav-item">
-            <a class="btn btn-outline-light" href="{{ url_for('logout') }}">Logout</a>
-          </li>
-        {% else %}
-          <li class="nav-item">
-            <a class="btn btn-outline-light me-2" href="{{ url_for('login') }}">Login</a>
-          </li>
-          <li class="nav-item">
-            <a class="btn btn-primary" href="{{ url_for('register') }}">Register</a>
-          </li>
-        {% endif %}
-      </ul>
+     <!-- User Authentication Links -->
+<ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+    {% if session['user_id'] %}
+        <li class="nav-item">
+            <span class="navbar-text me-2">Welcome, {{ session['username'] }}!</span>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary btn-sm">Logout</a>
+        </li>
+    {% else %}
+        <li class="nav-item">
+            <!-- ADDED the 'btn-login' class -->
+            <a href="{{ url_for('login') }}" class="btn btn-login me-2">Login</a>
+        </li>
+        <li class="nav-item">
+            <!-- ADDED the 'btn-register' class -->
+            <a href="{{ url_for('register') }}" class="btn btn-register">Register</a>
+        </li>
+    {% endif %}
+</ul>
     </div>
   </div>
 </nav>
