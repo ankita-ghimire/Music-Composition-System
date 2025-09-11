@@ -8,8 +8,8 @@
         <h4 class="card-title text-center mb-4">Composition Controls</h4>
         <form id="compose-form">
             <h6 class="form-section-title">Basics</h6>
-            <div class="mb-3"><label for="key" class="form-label">Key</label><select class="form-select" id="key" name="key_name"><option value="C">C</option><option value-="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="A">A</option><option value="B">B</option></select></div>
-            <div class="mb-3"><label for="mode" class="form-label">Mode</label><select class="form-select" id="mode" name="mode"><option value="major">Major</option><option value="minor">Minor</option></select></div>
+             <div class="mb-3"><label for="key" class="form-label">Key</label><select class="form-select" id="key" name="key_name"><option value="C">C</option><option value-="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="A">A</option><option value="B">B</option></select></div>
+           <div class="mb-3"><label for="mode" class="form-label">Mode</label><select class="form-select" id="mode" name="mode"><option value="major">Major</option><option value="minor">Minor</option></select></div>
             <div class="mb-3"><label for="instrument" class="form-label">Lead Instrument</label><select class="form-select" id="instrument" name="instrument"><option value="salamander-piano" selected>Piano</option><option value="flute">Flute</option><option value="guitar-acoustic">Acoustic Guitar</option><option value="violin">Violin</option></select></div>
             <div class="mb-3"><label for="mood" class="form-label">Mood</label><select class="form-select" id="mood" name="mood"><option value="default" selected>Default</option><option value="happy">Happy</option><option value="sad">Sad</option></select></div>
             <div class="mb-3"><label for="num_bars" class="form-label">Number of Bars</label><input type="number" class="form-control" id="num_bars" name="num_bars" value="4" min="1" max="16"></div>
@@ -36,7 +36,7 @@
 <script>
     const form = document.getElementById('compose-form');
     const resultsArea = document.getElementById('results-area');
-    let reverb, currentMidi, currentParts = [], sampler;
+    let reverb, currentMidi, currentParts = [];
     
     // --- MULTI-INSTRUMENT SOUND LIBRARY ---
     const soundfontLibrary = {
@@ -46,7 +46,7 @@
         },
         'flute': {
             baseUrl: "/static/soundfonts/flute/",
-            notes: { 'A4':'A4 (1).mp3', 'A5':'A5 (1).mp3', 'A6':'A6.mp3', 'C4':'C4 (1).mp3','C5':'C5 (1).mp3','C6':'C6.mp3','E4':'E4.mp3', 'E5':'E5.mp3', 'E6':'E6.mp3' }
+            notes: { 'A4':'A4_1.mp3', 'A5':'A5_1.mp3', 'A6':'A6.mp3', 'C4':'C4_1.mp3','C5':'C5_1.mp3','C6':'C6.mp3','E4':'E4.mp3', 'E5':'E5.mp3', 'E6':'E6.mp3' }
         },
         'guitar-acoustic': {
             baseUrl: "/static/soundfonts/guitar-acoustic/",
@@ -54,7 +54,7 @@
         },
         'violin': {
             baseUrl: "/static/soundfonts/violin/",
-            notes: { 'A3':'A3 (1).mp3', 'A4':'A4 (1).mp3', 'A5':'A5.mp3', 'A6':'A6.mp3', 'C4':'C4.mp3', 'C5':'C5.mp3', 'C6':'C6.mp3', 'C7':'C7.mp3', 'E4':'E4.mp3', 'E5':'E5.mp3', 'E6':'E6.mp3', 'G4':'G4.mp3', 'G5':'G5.mp3', 'G6':'G6.mp3' }
+            notes: { 'A3':'A3_1.mp3', 'A4':'A4_1.mp3', 'A5':'A5.mp3', 'A6':'A6.mp3', 'C4':'C4.mp3', 'C5':'C5.mp3', 'C6':'C6.mp3', 'C7':'C7.mp3', 'E4':'E4.mp3', 'E5':'E5.mp3', 'E6':'E6.mp3', 'G4':'G4.mp3', 'G5':'G5.mp3', 'G6':'G6.mp3' }
         }
     };
     const loadedSamplers = {};
@@ -79,16 +79,15 @@
         loadedSamplers[instrumentName] = sampler;
         return sampler;
     }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        reverb = new Tone.Reverb({ decay: 2.5, wet: 0.3 }).toDestination();
-    });
-
-    async function saveComposition(button) { const details = JSON.parse(button.dataset.details);
-
+ function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    async function saveComposition(button) { 
+        const details = JSON.parse(button.dataset.details);
         button.disabled = true;
         button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-
         try {
             const response = await fetch('/save-composition', {
                 method: 'POST',
@@ -97,7 +96,6 @@
             });
             const result = await response.json();
             if (!result.success) throw new Error(result.error);
-
             button.innerHTML = '<i class="fas fa-check"></i> Saved!';
             button.classList.replace('btn-info', 'btn-secondary');
         } catch (error) {
@@ -107,13 +105,7 @@
         }
     }
     // --- END OF saveComposition FUNCTION ---
- // --- NEW HELPER FUNCTION TO FORMAT TIME ---
-    function formatTime(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-
+ 
     document.addEventListener('DOMContentLoaded', () => {
         reverb = new Tone.Reverb({ decay: 2.5, wet: 0.3 }).toDestination();
     });
@@ -177,7 +169,7 @@
                                     <span class="visually-hidden">Toggle Dropdown</span>
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="${result.download_url_xml}">Sheet Music (.mxl)</a></li>
+                                    <li><a class="dropdown-item" href="${result.download_url_xml}">Sheet Music (.xml)</a></li>
                                 </ul>
                             </div>
                         </div>
@@ -253,5 +245,8 @@
             generateBtn.querySelector('.spinner-border').classList.add('d-none');
         }
     });
+    
 </script>
+
 {% endblock %}
+

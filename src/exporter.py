@@ -53,7 +53,7 @@ def export_solo_composition(melody_stream, chord_stream, output_path: Path,
         safe_filename = "".join(c for c in composition_name if c.isalnum() or c in (' ', '_')).rstrip().replace(' ', '_')
         output_path.mkdir(exist_ok=True)
         out_midi = output_path / f"{safe_filename}.mid"
-        out_xml = output_path / f"{safe_filename}.mxl"
+        out_xml = output_path / f"{safe_filename}.xml"
         
         full_score.write("midi", fp=str(out_midi))
         full_score.write("musicxml", fp=str(out_xml))
@@ -110,7 +110,7 @@ def export_ensemble_composition(melody_stream, accomp_stream, output_path: Path,
         safe_filename = "".join(c for c in composition_name if c.isalnum() or c in (' ', '_')).rstrip().replace(' ', '_')
         output_path.mkdir(exist_ok=True)
         out_midi = output_path / f"{safe_filename}.mid"
-        out_xml = output_path / f"{safe_filename}.mxl"
+        out_xml = output_path / f"{safe_filename}.xml"
         full_score.write("midi", fp=str(out_midi))
         full_score.write("musicxml", fp=str(out_xml))
         
@@ -175,7 +175,7 @@ def export_custom_composition(melody_stream, custom_chord_stream, output_path,
         safe_filename = "".join(c for c in composition_name if c.isalnum() or c in (' ', '_')).rstrip().replace(' ', '_')
         output_path.mkdir(exist_ok=True)
         out_midi = output_path / f"{safe_filename}.mid"
-        out_xml = output_path / f"{safe_filename}.mxl"
+        out_xml = output_path / f"{safe_filename}.xml"
         
         full_score.write("midi", fp=str(out_midi))
         full_score.write("musicxml", fp=str(out_xml))
