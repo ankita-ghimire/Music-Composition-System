@@ -4,9 +4,11 @@ from werkzeug.security import check_password_hash
 from pathlib import Path
 from music21 import chord
 
-# --- Backend Setup ---
-backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
-if backend_path not in sys.path: sys.path.insert(0, backend_path)
+
+backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'src'))
+if backend_path not in sys.path:
+    sys.path.insert(0, backend_path)
+
 try:
     from melody_generator import MelodyGenerator
     from chord_generator import generate_chords, create_stream_from_custom_progression
