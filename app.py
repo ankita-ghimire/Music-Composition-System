@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from pymongo import MongoClient
 from dotenv import load_dotenv
@@ -20,6 +20,11 @@ jwt = JWTManager(app)
 client = MongoClient(MONGO_URI)
 db = client['music_app']
 users = db['users']
+
+ #Home Route 
+@app.route('/')
+def home():
+    return render_template('home.html')
 
 # ✅ Register Route
 @app.route('/register', methods=['POST'])
