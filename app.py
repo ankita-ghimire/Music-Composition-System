@@ -27,6 +27,7 @@ def train_model_if_needed():
     """This function will train the AI model only if it hasn't been trained yet."""
     global _model_trained
     if not _model_trained:
+        # NOTE: The path is now correct for a flat structure
         training_data_path = Path(__file__).parent / "training_data"
         if training_data_path.exists():
             print("--- First request received. LAZY TRAINING MODEL... ---")
@@ -52,32 +53,35 @@ def compose_page():
 
 @app.route("/ensemble")
 def ensemble_page():
-    if 'user_id' not in session: flash("Please log in.", "warning"); return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash("Please log in to use the ensemble arranger.", "warning")
+        return redirect(url_for('login'))
     return render_template("ensemble.html")
 
 @app.route("/custom")
 def custom_page():
-    if 'user_id' not in session: flash("Please log in.", "warning"); return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash("Please log in to use the chord mixer.", "warning")
+        return redirect(url_for('login'))
     return render_template("custom.html")
 
 @app.route("/my-compositions")
 def my_compositions():
-    if 'user_id' not in session: flash("Please log in.", "warning"); return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash("Please log in to view your compositions.", "warning")
+        return redirect(url_for('login'))
     user_compositions = db.load_compositions_for_user(session['user_id'])
     return render_template("my_compositions.html", compositions=user_compositions)
 
 @app.route("/about")
-def about(): return render_template("about.html")
+def about():
+    return render_template("about.html")
 
 
-@app.route('/healthz')
-def healthz():
-    """This is a simple health check route that Render will use."""
-    return "OK", 200
-
+# --- User Authentication Routes ---
 @app.route("/register", methods=["GET", "POST"])
 def register():
-   if request.method == "POST":
+    if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
         if db.get_user_by_username(username):
@@ -87,11 +91,11 @@ def register():
             return redirect(url_for('login'))
         else:
             flash("An error occurred. Please try again.", "danger")
-   return render_template("register.html")
-    
+    return render_template("register.html")
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
-   if request.method == "POST":
+    if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
         user = db.get_user_by_username(username)
@@ -101,15 +105,19 @@ def login():
             return redirect(url_for('home'))
         else:
             flash("Invalid username or password.", "danger")
-   return render_template("login.html")
+    return render_template("login.html")
 
 @app.route("/logout")
 def logout():
-    session.clear(); flash("You have been logged out.", "info"); return redirect(url_for('home'))
+    session.clear()
+    flash("You have been logged out.", "info")
+    return redirect(url_for('home'))
 
+
+# --- Music Generation Action Routes (with Lazy Loading) ---
 @app.route("/compose-action", methods=["POST"])
 def compose_action():
-    train_model_if_needed()
+    train_model_if_needed() # <-- TRAIN THE MODEL HERE, ON DEMAND
     if 'user_id' not in session: return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
         data = request.form
@@ -132,8 +140,6 @@ def compose_action():
         base_midi_filename = os.path.basename(midi_filepath)
         base_xml_filename = os.path.basename(xml_filepath)
         
-        
-      
         return jsonify({
             "success": True,
             "composition_details": { 
@@ -143,7 +149,7 @@ def compose_action():
             },
             "download_url_midi": f"/download/{base_midi_filename}",
             "download_url_xml": f"/download/{base_xml_filename}",
-            "midi_data_url": f"/midi-data/{base_midi_filename}" # Use the new midi-data route
+            "midi_data_url": f"/midi-data/{base_midi_filename}"
         })
     except Exception as e:
         print(f"SERVER ERROR in /compose-action: {e}"); import traceback; traceback.print_exc()
@@ -151,6 +157,7 @@ def compose_action():
 
 @app.route("/save-composition", methods=["POST"])
 def save_composition_action():
+    train_model_if_needed()
     if 'user_id' not in session:
         return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
@@ -171,8 +178,10 @@ def save_composition_action():
     except Exception as e:
         print(f"SERVER ERROR in /save-composition: {e}")
         return jsonify({"success": False, "error": "Failed to save composition."}), 500
+    
 @app.route("/ensemble-action", methods=["POST"])
 def ensemble_action():
+    train_model_if_needed()
     if 'user_id' not in session: return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
         data = request.form
@@ -206,7 +215,6 @@ def ensemble_action():
             },
             "download_url_midi": f"/download/{base_midi_filename}",
             "download_url_xml": f"/download/{base_xml_filename}",
-            # --- THIS LINE IS THE FIX ---
             "midi_data_url": f"/midi-data/{base_midi_filename}" 
         })
     except Exception as e:
@@ -214,6 +222,7 @@ def ensemble_action():
 
 @app.route("/save-ensemble-composition", methods=["POST"])
 def save_ensemble_composition_action():
+    train_model_if_needed()
     if 'user_id' not in session:
         return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
@@ -238,6 +247,7 @@ def save_ensemble_composition_action():
 
 @app.route("/custom-action", methods=["POST"])
 def custom_action():
+    train_model_if_needed()
     if 'user_id' not in session: return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
         data = request.form
@@ -283,6 +293,7 @@ def custom_action():
 
 @app.route("/save-custom-composition", methods=["POST"])
 def save_custom_composition_action():
+    train_model_if_needed()
     if 'user_id' not in session:
         return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
