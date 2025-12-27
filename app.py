@@ -25,7 +25,7 @@ app.config['OUTPUT_FOLDER'] = os.path.abspath(os.path.join(backend_path, 'output
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 db.create_database()
 melody_engine = MelodyGenerator()
-training_data_path = Path(__file__).parent / "src" / "training_data" 
+training_data_path = Path(__file__).parent / "training_data" 
 if training_data_path.exists():
     melody_engine.train(str(training_data_path))
     print("AI model ready.")
