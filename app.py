@@ -1,87 +1,66 @@
-import os
-import sys
-from pathlib import Path
-
+import os, sys, json
 from flask import Flask, render_template, request, send_from_directory, jsonify, session, redirect, url_for, flash
 from werkzeug.security import check_password_hash
+from pathlib import Path
+from music21 import chord
 
-backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'src'))
-if backend_path not in sys.path:
-    sys.path.insert(0, backend_path)
-
+# --- Backend Setup ---
+backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
+if backend_path not in sys.path: sys.path.insert(0, backend_path)
 try:
     from melody_generator import MelodyGenerator
     from chord_generator import generate_chords, create_stream_from_custom_progression
     from exporter import export_solo_composition, export_ensemble_composition, export_custom_composition
     from arranger import create_arpeggiated_accompaniment
-    import database_manager as db  # Use our SQLite manager for everything
+    import database_manager as db
 except ImportError as e:
-    print(f"FATAL Error: Could not import a required module from 'src': {e}")
-    sys.exit(1)
+    print(f"FATAL Error: Could not import a required module from 'src': {e}"); sys.exit(1)
 
-
-
-app = Flask(__name__)
-
-app.config['SECRET_KEY'] = 'a_very_strong_secret_key_change_this_later'
-
-app.config['OUTPUT_FOLDER'] = os.path.abspath(os.path.join(os.path.dirname(__file__), 'output'))
+# --- App and AI Initialization ---
+app = Flask(__name__, template_folder='templates', static_folder='static')
+app.config['SECRET_KEY'] = 'your_super_secret_key_change_this'
+app.config['OUTPUT_FOLDER'] = os.path.abspath(os.path.join(backend_path, 'output'))
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
-
-
 db.create_database()
 melody_engine = MelodyGenerator()
-training_data_path = Path(__file__).parent / "training_data"
+training_data_path = Path(__file__).parent.parent / "training_data"
 if training_data_path.exists():
     melody_engine.train(str(training_data_path))
     print("AI model ready.")
 else:
-    print("WARNING: 'training_data' folder not found. AI will not generate melodies.")
+    print("FATAL Error: training_data folder not found.")
 
-
-# --- Page Serving Routes ---
 @app.route("/")
-def home():
-    return render_template("home.html")
+def home(): return render_template("home.html")
 
 @app.route("/compose")
 def compose_page():
-    if 'user_id' not in session:
-        flash("Please log in to use the composer.", "warning")
-        return redirect(url_for('login'))
+    if 'user_id' not in session: flash("Please log in.", "warning"); return redirect(url_for('login'))
     return render_template("compose.html")
+
 
 @app.route("/ensemble")
 def ensemble_page():
-    if 'user_id' not in session:
-        flash("Please log in to use the ensemble arranger.", "warning")
-        return redirect(url_for('login'))
+    if 'user_id' not in session: flash("Please log in.", "warning"); return redirect(url_for('login'))
     return render_template("ensemble.html")
 
 @app.route("/custom")
 def custom_page():
-    if 'user_id' not in session:
-        flash("Please log in to use the chord mixer.", "warning")
-        return redirect(url_for('login'))
+    if 'user_id' not in session: flash("Please log in.", "warning"); return redirect(url_for('login'))
     return render_template("custom.html")
 
 @app.route("/my-compositions")
 def my_compositions():
-    if 'user_id' not in session:
-        flash("Please log in to view your compositions.", "warning")
-        return redirect(url_for('login'))
+    if 'user_id' not in session: flash("Please log in.", "warning"); return redirect(url_for('login'))
     user_compositions = db.load_compositions_for_user(session['user_id'])
     return render_template("my_compositions.html", compositions=user_compositions)
 
 @app.route("/about")
-def about():
-    return render_template("about.html")
-
-
+def about(): return render_template("about.html")
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    if request.method == "POST":
+   if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
         if db.get_user_by_username(username):
@@ -91,35 +70,29 @@ def register():
             return redirect(url_for('login'))
         else:
             flash("An error occurred. Please try again.", "danger")
-    return render_template("register.html")
-
+   return render_template("register.html")
+    
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == "POST":
+   if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        user = db.get_user_by_username(username) # user is a tuple (id, username, password_hash)
+        user = db.get_user_by_username(username)
         if user and check_password_hash(user[2], password):
             session['user_id'] = user[0]
             session['username'] = user[1]
             return redirect(url_for('home'))
         else:
             flash("Invalid username or password.", "danger")
-    return render_template("login.html")
-
+   return render_template("login.html")
 @app.route("/logout")
 def logout():
-    session.clear()
-    flash("You have been logged out.", "info")
-    return redirect(url_for('home'))
+    session.clear(); flash("You have been logged out.", "info"); return redirect(url_for('home'))
 
-
-# --- Music Generation Action Routes ---
 @app.route("/compose-action", methods=["POST"])
 def compose_action():
     if 'user_id' not in session: return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
-        # (This logic is correct and copied from your server.py)
         data = request.form
         key_root, user_mode, num_bars, instrument, mood, tempo_bpm = \
             data.get("key_name", "C"), data.get("mode", "major"), int(data.get("num_bars", 4)), \
@@ -140,6 +113,8 @@ def compose_action():
         base_midi_filename = os.path.basename(midi_filepath)
         base_xml_filename = os.path.basename(xml_filepath)
         
+        
+      
         return jsonify({
             "success": True,
             "composition_details": { 
@@ -149,7 +124,7 @@ def compose_action():
             },
             "download_url_midi": f"/download/{base_midi_filename}",
             "download_url_xml": f"/download/{base_xml_filename}",
-            "midi_data_url": f"/midi-data/{base_midi_filename}"
+            "midi_data_url": f"/midi-data/{base_midi_filename}" # Use the new midi-data route
         })
     except Exception as e:
         print(f"SERVER ERROR in /compose-action: {e}"); import traceback; traceback.print_exc()
@@ -177,7 +152,6 @@ def save_composition_action():
     except Exception as e:
         print(f"SERVER ERROR in /save-composition: {e}")
         return jsonify({"success": False, "error": "Failed to save composition."}), 500
-    
 @app.route("/ensemble-action", methods=["POST"])
 def ensemble_action():
     if 'user_id' not in session: return jsonify({"success": False, "error": "Authentication required."}), 401
@@ -314,7 +288,7 @@ def save_custom_composition_action():
 def midi_data(filename):
     """Serves the raw MIDI file data for the in-browser player."""
     return send_from_directory(app.config['OUTPUT_FOLDER'], filename)
-
+# --- END OF FIX ---
 
 @app.route("/play-midi/<int:comp_id>")
 def play_midi_from_db(comp_id):
@@ -340,7 +314,3 @@ def download_file(filename):
 if __name__ == "__main__":
     app.run(debug=True)
 
-
-# Run server
-if __name__ == '__main__':
-    app.run(debug=True)
