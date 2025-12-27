@@ -17,7 +17,7 @@ except ImportError as e:
 # --- App and AI Initialization ---
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.config['SECRET_KEY'] = 'your_super_secret_key_change_this'
-app.config['OUTPUT_FOLDER'] = os.path.abspath(os.path.join(backend_path, 'output'))
+app.config['OUTPUT_FOLDER'] = os.path.abspath(os.path.join(os.path.dirname(__file__), 'output'))
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 db.create_database()
 melody_engine = MelodyGenerator()
