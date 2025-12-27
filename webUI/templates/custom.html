@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% block title %}Chord Mix - Custom Progression{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Form Column -->
+  <div class="col-lg-4">
+    <div class="card p-3">
+        <h4 class="card-title text-center mb-4"><i class="fas fa-cubes"></i> Chord Mix</h4>
+        <form id="custom-form">
+            <h6 class="form-section-title">Your Progression</h6>
+            <div class="mb-3">
+                <label for="chord_progression" class="form-label">Chord Progression</label>
+                <textarea class="form-control" id="chord_progression" name="chord_progression" rows="3" placeholder="e.g., Am, F, C, G" required></textarea>
+                <div class="form-text">Enter chords separated by commas.</div>
+            </div>
+
+            <h6 class="form-section-title">Instrumentation</h6>
+            <div class="mb-3">
+                <label for="instrument" class="form-label">Instrument</label>
+                <select class="form-select" id="instrument" name="instrument">
+                    <option value="salamander-piano" selected>Piano</option>
+                    <option value="flute">Flute</option>
+                    <option value="guitar-acoustic">Acoustic Guitar</option>
+                    <option value="violin">Violin</option>
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                            <label for="num_bars" class="form-label">Number of Bars</label>
+                            <input type="number" class="form-control" id="num_bars" name="num_bars" value="8" min="4" max="16" required>
+                        </div>
+            
+            <hr class="my-4">
+            <h6 class="form-section-title">Tempo</h6>
+            <div class="mb-3">
+                <label for="tempo" class="form-label">Tempo (BPM)</label>
+                <input type="range" class="form-range" id="tempo" name="tempo" min="60" max="180" value="120" oninput="this.nextElementSibling.value = this.value">
+                <output class="d-block text-center">120</output>
+            </div>
+            
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg mt-3" id="generate-btn">
+                    <span class="spinner-border spinner-border-sm d-none"></span>
+                    <i class="fas fa-magic"></i> Generate Melody
+                </button>
+            </div>
+        </form>
+    </div>
+  </div>
+  <!-- Results Column -->
+  <div class="col-lg-8">
+    <div class="card results-panel">
+        <div id="results-area" class="card-body text-center">
+            <i class="fas fa-drafting-compass welcome-icon"></i>
+            <h5 class="mt-3">Build Your Sound</h5>
+            <p class="text-muted">Enter your chords and let the AI compose a melody.</p>
+        </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // This script is adapted from compose.html to work for the custom progression workflow
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('custom-form');
+        const resultsArea = document.getElementById('results-area');
+        let reverb = new Tone.Reverb({ decay: 2.5, wet: 0.3 }).toDestination();
+        let currentMidi, currentParts = [];
+
+        const soundfontLibrary = {
+            'salamander-piano': {
+            baseUrl: "/static/soundfonts/salamander-piano/",
+            notes: { 'A3':'A3.mp3', 'A4':'A4.mp3', 'A5':'A5.mp3', 'C3':'C3.mp3',  'C4':'C4.mp3', 'C5':'C5.mp3', 'D#3':'Ds3.mp3', 'D#4':'Ds4.mp3', 'D#5':'Ds5.mp3', 'F#3':'Fs3.mp3', 'F#4':'Fs4.mp3', 'F#5':'Fs5.mp3' }
+        },
+        'flute': {
+            baseUrl: "/static/soundfonts/flute/",
+            notes: { 'A4':'A4_1.mp3', 'A5':'A5_1.mp3', 'A6':'A6.mp3', 'C4':'C4_1.mp3','C5':'C5_1.mp3','C6':'C6.mp3','E4':'E4.mp3', 'E5':'E5.mp3', 'E6':'E6.mp3' }
+        },
+        'guitar-acoustic': {
+            baseUrl: "/static/soundfonts/guitar-acoustic/",
+            notes: { 'A2':'A2.mp3', 'A3':'A3.mp3', 'A4':'A4.mp3', 'A#2':'As2.mp3', 'A#3':'As3.mp3', 'B3':'B3.mp3', 'B4':'B4.mp3', 'C3':'C3.mp3', 'C4':'C4.mp3', 'C5':'C5.mp3', 'C#3':'Cs3.mp3', 'C#4':'Cs4.mp3', 'C#5':'Cs5.mp3', 'D2':'D2.mp3', 'D3':'D3.mp3', 'D4':'D4.mp3', 'D5':'D5.mp3',  'D#2':'Ds2.mp3', 'D#3':'Ds3.mp3', 'D#4':'Ds4.mp3', 'E2':'E2.mp3', 'E3':'E3.mp3',  'E4':'E4.mp3', 'F2':'F2.mp3', 'F3':'F3.mp3', 'F4':'F4.mp3',  'F#2':'Fs2.mp3', 'F#3':'Fs3.mp3', 'F#4':'Fs4.mp3', 'G2':'G2.mp3', 'G3':'G3.mp3', 'G4':'G4.mp3', 'G#2':'Gs2.mp3', 'G#3':'Gs3.mp3', 'G#4':'Gs4.mp3' }
+        },
+        'violin': {
+            baseUrl: "/static/soundfonts/violin/",
+            notes: { 'A3':'A3_1.mp3', 'A4':'A4_1.mp3', 'A5':'A5.mp3', 'A6':'A6.mp3', 'C4':'C4.mp3', 'C5':'C5.mp3', 'C6':'C6.mp3', 'C7':'C7.mp3', 'E4':'E4.mp3', 'E5':'E5.mp3', 'E6':'E6.mp3', 'G4':'G4.mp3', 'G5':'G5.mp3', 'G6':'G6.mp3' }
+        } };
+        const loadedSamplers = {};
+
+        async function getInstrument(instrumentName) {
+            if (loadedSamplers[instrumentName]) return loadedSamplers[instrumentName];
+            const config = soundfontLibrary[instrumentName];
+            if (!config) throw new Error(`Instrument '${instrumentName}' not found.`);
+            const sampler = new Tone.Sampler({ urls: config.notes, baseUrl: config.baseUrl }).connect(reverb);
+            await Tone.loaded();
+            loadedSamplers[instrumentName] = sampler;
+            return sampler;
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            if (Tone.Transport.state !== 'stopped') Tone.Transport.stop();
+            currentParts.forEach(part => part.dispose());
+            Tone.Transport.cancel(0);
+
+            const generateBtn = document.getElementById('generate-btn');
+            const formData = new FormData(form);
+            const selectedInstrumentName = formData.get('instrument');
+
+            generateBtn.disabled = true;
+            generateBtn.querySelector('.spinner-border').classList.remove('d-none');
+            resultsArea.innerHTML = `<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border" style="width: 3rem; height: 3rem;"></div><span class="ms-3">Composing...</span></div>`;
+            
+            try {
+                const response = await fetch('/custom-action', { method: 'POST', body: formData });
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error || 'Server error');
+                
+                const details = result.composition_details;
+
+                resultsArea.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-check-circle success-icon"></i><h4 class="mt-3">Preview Ready!</h4>
+                        <p>Listen below. If you like it, save it to your collection.</p>
+                        <div class="player-container">
+                            <div class="player-top-row">
+                                <button id="play-pause-btn" class="btn btn-primary" disabled><i class="fas fa-spinner fa-spin"></i></button>
+                                <div class="progress-bar-container w-100">
+                                    <span id="current-time" class="timestamp">00:00</span>
+                                    <input type="range" id="seek-slider" class="seek-slider" value="0" step="0.1" disabled>
+                                    <span id="total-duration" class="timestamp">00:00</span>
+                                </div>
+                            </div>
+                            <div class="action-buttons">
+                                <button id="save-btn" class="btn btn-info"><i class="fas fa-save"></i> Save</button>
+                                <div class="btn-group">
+                                    <a href="${result.download_url_midi}" class="btn btn-success"><i class="fas fa-download"></i> MIDI</a>
+                                    <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown"></button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="${result.download_url_xml}">Sheet Music (.xml)</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+
+                const playPauseBtn = document.getElementById('play-pause-btn');
+                const seekSlider = document.getElementById('seek-slider');
+                const currentTimeEl = document.getElementById('current-time');
+                const totalDurationEl = document.getElementById('total-duration');
+                const saveBtn = document.getElementById('save-btn');
+                
+                const instrument = await getInstrument(selectedInstrumentName);
+                currentMidi = await Midi.fromUrl(result.midi_data_url);
+                
+                Tone.Transport.bpm.value = currentMidi.header.tempos[0]?.bpm || 120;
+                totalDurationEl.textContent = formatTime(currentMidi.duration);
+                seekSlider.max = currentMidi.duration;
+
+                currentMidi.tracks.forEach(track => {
+                    currentParts.push(new Tone.Part((time, note) => {
+                        instrument.triggerAttackRelease(note.name, note.duration, time, note.velocity);
+                    }, track.notes).start(0));
+                });
+
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i> Play';
+                playPauseBtn.disabled = false;
+                seekSlider.disabled = false;
+
+                playPauseBtn.addEventListener('click', async () => {
+                    await Tone.start();
+                    (Tone.Transport.state !== 'started') ? Tone.Transport.start() : Tone.Transport.pause();
+                });
+
+                Tone.Transport.on('start pause stop', () => {
+                    playPauseBtn.innerHTML = (Tone.Transport.state === 'started') ? '<i class="fas fa-pause"></i> Pause' : '<i class="fas fa-play"></i> Play';
+                });
+
+                Tone.Transport.scheduleRepeat(() => {
+                    const currentTime = Tone.Transport.seconds;
+                    seekSlider.value = currentTime;
+                    currentTimeEl.textContent = formatTime(currentTime);
+                    if (currentTime >= currentMidi.duration) Tone.Transport.stop();
+                }, 0.1);
+                
+                seekSlider.addEventListener('input', () => { Tone.Transport.seconds = seekSlider.value; });
+
+                saveBtn.addEventListener('click', async () => {
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                    try {
+                        const saveResponse = await fetch('/save-custom-composition', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(details)
+                        });
+                        const saveResult = await saveResponse.json();
+                        if (!saveResult.success) throw new Error(saveResult.error);
+                        saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+                    } catch (err) {
+                        saveBtn.innerHTML = 'Save Failed';
+                        console.error('Save failed:', err);
+                    }
+                });
+
+            } catch (error) {
+                resultsArea.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${error.message}</div>`;
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.querySelector('.spinner-border').classList.add('d-none');
+            }
+        });
+    });
+</script>
+{% endblock %}

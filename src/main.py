@@ -1,166 +1,85 @@
-# ==============================================================================
-# FINAL, COMPLETE, AND THOROUGHLY REVIEWED CODE FOR: src/main.py
-# ==============================================================================
-
-import sys
 import os
-import subprocess
+import sys
 from pathlib import Path
+import subprocess
 
-# --- Music21 Imports (All necessary tools) ---
-from music21 import stream, note, duration, clef, meter, chord, metadata
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-# --- Custom Module Imports ---
 from melody_generator import MelodyGenerator
 from chord_generator import generate_chords
+from exporter import export_solo_composition
 
-
-# ==============================================================================
-# HELPER UTILITY: To open the final score automatically
-# ==============================================================================
 def open_in_musescore(file_path: str):
-    """
-    Intelligently tries to open a MusicXML file in MuseScore on macOS or Windows.
-    """
-    print("\nAttempting to open file in MuseScore...")
-    if not os.path.exists(file_path):
-        print(f"⚠️ Error: File not found at {file_path}. Cannot open.")
+    """Helper function to automatically open the final score."""
+    print(f"\nAttempting to open {os.path.basename(file_path)}...")
+    if not file_path or not os.path.exists(file_path):
+        print(f"Error: File path is invalid. Cannot open.")
         return
-    
-    # --- macOS Logic ---
-    if sys.platform == "darwin":
-        possible_app_names = ["MuseScore Studio", "MuseScore 4", "MuseScore 3"]
-        for app_name in possible_app_names:
-            try:
-                subprocess.run(["open", "-a", app_name, file_path], check=True, capture_output=True)
-                print(f"✅ Successfully opened in '{app_name}'.")
-                return
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                continue
-        print(f"⚠️ Unable to find MuseScore. Please open the file manually: {file_path}")
-
-    # --- Windows Logic ---
-    elif sys.platform == "win32":
+    if sys.platform == "win32":
         possible_paths = [
             "C:/Program Files/MuseScore 4/bin/MuseScore4.exe",
             "C:/Program Files/MuseScore Studio/bin/MuseScore Studio.exe",
-            "C:/Program Files/MuseScore 3/bin/MuseScore3.exe",
         ]
         for ms_path in possible_paths:
             if os.path.exists(ms_path):
                 try:
                     subprocess.Popen([ms_path, file_path])
-                    print(f"✅ Successfully opened in MuseScore at: {ms_path}")
+                    print(f"Successfully launched MuseScore.")
                     return
-                except Exception:
-                    continue
-        print(f"⚠️ MuseScore not found in default paths. Please open the file manually: {file_path}")
-        
-    else:
-        print(f"Automatic opening not supported on {sys.platform}. Please open manually: {file_path}")
+                except Exception: continue
+        try:
+            os.startfile(file_path)
+            print("Opened file with default application.")
+        except Exception as e:
+            print(f"⚠️ Failed to open file with default app: {e}")
+    else: 
+        try:
+            subprocess.run(["open", file_path], check=True)
+            print(" Opened file with default application.")
+        except Exception:
+            print(f"Failed to open file.")
 
+def main_test():
+    print("=== Music Composition System (SOLO Backend Test) ===\n")
 
-# ==============================================================================
-# MAIN APPLICATION LOGIC
-# ==============================================================================
-def main():
-    print("=== Music Composition System ===\n")
+    key_root = input("Enter Key (e.g., C): ").strip()
+    user_mode = input("Enter Mode (major/minor): ").strip().lower()
+    instrument = input("Enter Instrument (piano, flute, etc.): ").strip().lower()
+    mood = input("Enter Mood (default, happy, sad): ").strip().lower()
+    num_bars = int(input("Enter Number of Bars (e.g., 8): ").strip())
+    tempo_bpm = int(input("Enter Tempo (BPM, e.g., 120): ").strip())
+    
+    final_mode = user_mode
+    temperature = 1.2
+    if mood == "happy": final_mode = "major"; temperature = 1.0
+    elif mood == "sad": final_mode = "minor"; temperature = 0.8
+    key_name = key_root.upper() if final_mode == "major" else key_root.lower()
+    composition_name = f"SOLO Test ({mood.title()}) in {key_root.upper()} {final_mode}"
 
-    # 1) Get User Input
-    key_root = input("Enter key (C, D, E, F, G, A, B): ").strip().upper()
-    mode = input("Enter mode (major/minor): ").strip().lower()
-    num_bars_input = input("Enter number of bars (default 4): ").strip()
-
-    try:
-        num_bars = int(num_bars_input)
-        if num_bars <= 0: raise ValueError
-    except ValueError:
-        num_bars = 4
-        print("Invalid input! Defaulting to 4 bars.")
-
-    key_name = key_root.upper() if mode == 'major' else key_root.lower()
-    composition_title = f"AI Composition in {key_root} {mode}"
-    print(f"\nGenerating: {composition_title}...")
-
-    # 2) Initialize and Train the Melody AI
+    print("\nInitializing and training AI model...")
     melody_engine = MelodyGenerator()
     training_data_path = Path(__file__).parent.parent / "training_data"
     melody_engine.train(str(training_data_path))
-
-    # 3) Generate Raw Melody Data from the AI
-    melody_length = num_bars * 8
-    melody_events = melody_engine.generate(length=melody_length, key=key_name, temperature=1.2)
-    if not melody_events:
-        print("Error: Melody generation returned no events. Exiting.")
-        return
-    print(f"-> Melody data generated by AI ({len(melody_events)} events).")
-
-    # 4) Generate the Chord Progression (this should return a music21 Stream)
-    chord_stream = generate_chords(key_name, mode, num_bars)
-    if not chord_stream or len(chord_stream.flatten().notesAndRests) == 0:
-        print("Error: Chord generation returned an empty stream. Exiting.")
-        return
-    print("-> Chord progression generated.")
-
-    # 5) === NEW, ROBUST ASSEMBLY PROCESS ===
-    # Create separate, structured Parts for melody and chords
     
-    # --- MELODY PART ---
-    melody_part = stream.Part()
-    melody_part.id = 'melody'
-    melody_part.append(clef.TrebleClef())
-    # Convert AI events to music21 notes and add them one by one
-    TICKS_PER_QUARTER = 480.0
-    for pitch, time_delta_ticks in melody_events:
-        # We'll represent the rhythm by just giving each note a fixed duration for now
-        # A more advanced system would convert time_delta_ticks into rests.
-        n = note.Note(pitch)
-        n.duration = duration.Duration(0.5) # Eighth note
-        melody_part.append(n)
+    print(f"\nGenerating {num_bars}-bar piece...")
+    melody_stream = melody_engine.generate(length=num_bars * 4, key=key_name, mood=mood, temperature=temperature)
+    chord_stream = generate_chords(key_root, final_mode, num_bars, mood=mood)
+    print("-> AI data generated successfully.")
 
-    # --- CHORD PART ---
-    chord_part = stream.Part()
-    chord_part.id = 'chords'
-    chord_part.append(clef.BassClef())
-    # The chord_generator should already return a stream of chords. We just append them.
-    for ch in chord_stream:
-        chord_part.append(ch)
-        
-    print("-> Melody and chords structured into Parts.")
+    output_folder = Path(__file__).parent.parent / "output"
+    _, xml_filepath = export_solo_composition( 
+        melody_stream=melody_stream,
+        chord_stream=chord_stream,
+        output_path=output_folder,
+        composition_name=composition_name,
+        instrument_name=instrument,
+        bpm=tempo_bpm
+    )
+    if xml_filepath:
+        print("\n--- SOLO Backend Test Complete ---")
+        open_in_musescore(xml_filepath)
+    else:
+        print("\n--- SOLO Backend Test Failed ---")
 
-    # 6) Combine Parts into a final Score and add Metadata
-    full_score = stream.Score()
-    full_score.insert(0, metadata.Metadata())
-    full_score.metadata.title = composition_title
-    full_score.metadata.composer = "Generative AI System"
-    full_score.insert(0, melody_part)
-    full_score.insert(0, chord_part)
-    
-    # VERY IMPORTANT: .makeMeasures() tells music21 to calculate the barlines.
-    # This is what fixes the "no measures found" error.
-    full_score.makeMeasures(inPlace=True)
-    
-    print("-> Final score assembled and measures calculated.")
-
-    # 7) Prepare output paths and save the files
-    out_dir = Path(__file__).parent.parent / "output"
-    out_dir.mkdir(exist_ok=True)
-    out_midi = out_dir / f"{composition_title.replace(' ', '_')}.mid"
-    out_xml = out_dir / f"{composition_title.replace(' ', '_')}.mxl"
-
-    full_score.write("midi", fp=str(out_midi))
-    full_score.write("musicxml", fp=str(out_xml))
-    
-    print(f"\n✅ Composition exported successfully!")
-    print(f"   MIDI: {out_midi}")
-    print(f"   MusicXML: {out_xml}")
-
-    # 8) Automatically open the score in MuseScore
-    open_in_musescore(str(out_xml))
-
-
-# ==============================================================================
-# SCRIPT ENTRY POINT
-# ==============================================================================
 if __name__ == "__main__":
-    main()
+    main_test()

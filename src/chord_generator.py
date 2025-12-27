@@ -1,114 +1,61 @@
-"""
-Chord Generator Module
-----------------------
-Generates chord progressions for a given key and mode.
-Also provides helper to open outputs directly in MuseScore.
-"""
 
-import os, platform, subprocess
-from pathlib import Path
-from music21 import stream, chord, key, tempo
+import random
 import copy
+from music21 import stream, chord, key, interval
 
-# -------------------------------
-# Helper to open outputs
-# -------------------------------
-def open_outputs(midi_path: str, xml_path: str):
-    """
-    Open both MIDI + MusicXML directly in MuseScore (no VLC).
-    """
-    midi_path = str(Path(midi_path).resolve())
-    xml_path = str(Path(xml_path).resolve())
-    system = platform.system()
+def generate_chords(key_root: str, mode: str, num_bars: int, mood: str = 'default', is_structured=False) -> stream.Stream:
+    
+    final_mode = mode
+    if mood == 'happy': final_mode = 'major'
+    elif mood == 'sad': final_mode = 'minor'
 
-    try:
-        if system == "Windows":
-            possible_paths = [
-                r"C:\Program Files\MuseScore 4\bin\MuseScore4.exe",
-                r"C:\Program Files\MuseScore 3\bin\MuseScore3.exe"
-            ]
-            for ms_path in possible_paths:
-                if os.path.exists(ms_path):
-                    # Open both files in MuseScore
-                    subprocess.Popen([ms_path, midi_path])
-                    subprocess.Popen([ms_path, xml_path])
-                    print(f"Opened in MuseScore: {xml_path} and {midi_path}")
-                    return
-            print("MuseScore not found in default path. Please open the files manually.")
-        elif system == "Darwin":  # macOS
-            app_name = "MuseScore Studio" 
-            subprocess.run(["open", "-a", "MuseScore", midi_path])
-            subprocess.run(["open", "-a", "MuseScore", xml_path])
-            print(f"Opened in MuseScore: {xml_path} and {midi_path}")
-        else:  # Linux
-            subprocess.run(["musescore", midi_path])
-            subprocess.run(["musescore", xml_path])
-            print(f"Opened in MuseScore: {xml_path} and {midi_path}")
-    except Exception as e:
-        print(f"Could not open in MuseScore automatically: {e}")
+    if final_mode == 'major':
+        verse_base = [chord.Chord("C E G"), chord.Chord("G B D"), chord.Chord("A C E"), chord.Chord("F A C")]
+        chorus_base = [chord.Chord("F A C"), chord.Chord("C E G"), chord.Chord("G B D"), chord.Chord("A C E")]
+        simple_base = verse_base
+        source_key_tonic = 'C'
+    else: 
+        verse_base = [chord.Chord("A C E"), chord.Chord("F A C"), chord.Chord("D F A"), chord.Chord("E G B")]
+        chorus_base = [chord.Chord("D F A"), chord.Chord("E G B"), chord.Chord("A C E"), chord.Chord("F A C")]
+        simple_base = verse_base
+        source_key_tonic = 'a'
 
-# -------------------------------
-# Chord triads
-# -------------------------------
-def get_major_triads(scale_obj):
-    return {
-        "I": chord.Chord([scale_obj.pitchFromDegree(1),
-                          scale_obj.pitchFromDegree(3),
-                          scale_obj.pitchFromDegree(5)]),
-        "IV": chord.Chord([scale_obj.pitchFromDegree(4),
-                           scale_obj.pitchFromDegree(6),
-                           scale_obj.pitchFromDegree(1)]),
-        "V": chord.Chord([scale_obj.pitchFromDegree(5),
-                          scale_obj.pitchFromDegree(7),
-                          scale_obj.pitchFromDegree(2)]),
-        "vi": chord.Chord([scale_obj.pitchFromDegree(6),
-                           scale_obj.pitchFromDegree(1),
-                           scale_obj.pitchFromDegree(3)])
-    }
+    # 3. Transpose these reliable chords to the user's desired key
+    target_key = key.Key(key_root, final_mode)
+    transposition_interval = interval.Interval(key.Key(source_key_tonic).tonic, target_key.tonic)
+    
+    verse_prog = [c.transpose(transposition_interval) for c in verse_base]
+    chorus_prog = [c.transpose(transposition_interval) for c in chorus_base]
+    simple_prog = [c.transpose(transposition_interval) for c in simple_base]
 
-def get_minor_triads(scale_obj):
-    return {
-        "i": chord.Chord([scale_obj.pitchFromDegree(1),
-                          scale_obj.pitchFromDegree(3),
-                          scale_obj.pitchFromDegree(5)]),
-        "iv": chord.Chord([scale_obj.pitchFromDegree(4),
-                           scale_obj.pitchFromDegree(6),
-                           scale_obj.pitchFromDegree(1)]),
-        "v": chord.Chord([scale_obj.pitchFromDegree(5),
-                          scale_obj.pitchFromDegree(7),
-                          scale_obj.pitchFromDegree(2)]),
-        "VI": chord.Chord([scale_obj.pitchFromDegree(6),
-                           scale_obj.pitchFromDegree(1),
-                           scale_obj.pitchFromDegree(3)])
-    }
-
-# -------------------------------
-# Chord progression generator
-# -------------------------------
-def generate_chords(key_name="C", mode="major", num_bars=4):
-    k = key.Key(key_name, mode)
-
-    if mode.lower() == "major":
-        chords_dict = get_major_triads(k)
-        templates = [["I", "vi", "IV", "V"], ["I", "IV", "V", "I"]]
-    else:
-        chords_dict = get_minor_triads(k)
-        templates = [["i", "VI", "iv", "V"], ["i", "iv", "V", "i"]]
-
-    template = templates[0]
+    # 4. Build the final stream
     chord_stream = stream.Stream()
-    chord_stream.append(tempo.MetronomeMark(number=100))
-
+    
     for i in range(num_bars):
-        symbol = template[i % len(template)]
-        if symbol in chords_dict:
-            c = copy.deepcopy(chords_dict[symbol])
-            c.lyric = symbol
-            c.quarterLength = 4.0
-            chord_stream.append(c)
+        section_index = i % 4
+        
+        if is_structured:
+            if (i // 4) % 2 == 0: current_prog = verse_prog
+            else: current_prog = chorus_prog
         else:
-            tonic = copy.deepcopy(list(chords_dict.values())[0])
-            tonic.quarterLength = 4.0
-            chord_stream.append(tonic)
-
+            current_prog = simple_prog
+            
+        new_chord = copy.deepcopy(current_prog[section_index])
+        new_chord.duration.quarterLength = 4.0
+        chord_stream.append(new_chord)
+        
     return chord_stream
+
+def create_stream_from_custom_progression(chord_names: list) -> stream.Stream:
+    
+    from music21 import stream, chord # Local import
+    
+    custom_chord_stream = stream.Stream()
+    for name in chord_names:
+        try:
+            new_chord = chord.Chord(name)
+            new_chord.duration.quarterLength = 4.0
+            custom_chord_stream.append(new_chord)
+        except Exception:
+            print(f"Warning: Could not parse chord name '{name}'.")
+    return custom_chord_stream

@@ -2,14 +2,24 @@
 .venv/
 venv/
 
-# Generated music files
-output/
-
 # Python cache files
 __pycache__/
 *.pyc
 
+# Database files
+*.db
+
+# Large datasets - DO NOT TRACK
+training_data/
+
+# Generated music files
+output/
+
+# macOS system files
+.DS_Store
+
 # VSCode settings
 .vscode/
 
+# Other
 *.dmg

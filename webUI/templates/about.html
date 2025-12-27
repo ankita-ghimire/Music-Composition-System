@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}About MuseAI Composer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card p-4 p-md-5">
+            <div class="text-center mb-5">
+                <h1 class="display-5">The Story of MuseAI</h1>
+                <p class="lead text-muted">Fusing Artificial Intelligence with Musical Creativity</p>
+            </div>
+
+            <!-- What is This Project? -->
+            <h4 class="form-section-title">Our Vision</h4>
+            <p>
+                This project was born from a passion for both music and technology. We envisioned an intelligent tool that could serve as a creative partner, breaking down the barriers to musical composition. Whether you are a seasoned musician searching for a new spark of inspiration, a student learning the fundamentals of harmony, or someone who has never written a note, MuseAI is designed to be your collaborator.
+            </p>
+            <p>
+                Our goal is to empower users to explore, create, and share musical ideas effortlessly, transforming complex musical theory into an intuitive and enjoyable experience.
+            </p>
+            <hr class="my-5">
+
+            <!-- How It Works Section -->
+            <h4 class="form-section-title">The Technology Behind the Music</h4>
+            <p>MuseAI is powered by a hybrid system of artificial intelligence models, each with a specialized role in the creative process:</p>
+            <div class="row g-4 mt-3">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-brain me-2"></i>The Melody Brain: A Markov Chain Model</h5>
+                    <p>The heart of our melody generation is a probabilistic model known as a Markov Chain. We trained this model on a diverse dataset of classical and folk MIDI files, allowing it to learn the intricate patterns and relationships between notes and rhythms. When you ask for a melody, the AI doesn't just pick random notes; it makes intelligent, probabilistic choices based on its "memory" of real music, resulting in sequences that are both unique and musically coherent.</p>
+                </div>
+                <div class="col-md-6">
+                    <h5><i class="fas fa-book me-2"></i>The Harmony Expert: A Rule-Based System</h5>
+                    <p>Underpinning every great melody is a strong harmonic foundation. Our chord generation engine acts as an "Expert System," leveraging the power of the `music21` library. It applies the fundamental rules of Western music theory to build chord progressions that are always harmonically correct for the chosen key and mood. It can even generate structured progressions with distinct "verse" and "chorus" sections for more dynamic songs.</p>
+                </div>
+            </div>
+            <hr class="my-5">
+
+            <!-- Features Section -->
+            <h4 class="form-section-title">Your Creative Toolkit</h4>
+            <p>We've built three distinct creative modes to suit different compositional goals:</p>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                    <strong><i class="fas fa-user me-2"></i>Solo Composer:</strong> The classic mode. Choose an instrument, a key, and a mood, and let the AI generate a complete solo piece with melody and chords, ready for you to explore.
+                </li>
+                <li class="list-group-item">
+                    <strong><i class="fas fa-users me-2"></i>Ensemble Arranger:</strong> Go beyond a single instrument. Select a lead instrument for the melody and a separate accompaniment instrument. Our "AI Arranger" will then create a beautiful, arpeggiated backing part that complements the lead, producing a rich, multi-part ensemble piece.
+                </li>
+                <li class="list-group-item">
+                    <strong><i class="fas fa-cubes me-2"></i>Chord Mix:</strong> For the experimental musician. Manually build your own unique chord progression, and our AI will generate a melody specifically tailored to your custom harmony. It's a powerful tool for testing new ideas and breaking creative blocks.
+                </li>
+            </ul>
+
+        </div>
+    </div>
+</div>
+{% endblock %}```
+
+### **Why This is a Better "About" Page**
+
+*   **Tells a Story:** It starts with a "Vision," which is more engaging than just a technical description.
+*   **Highlights the AI Models:** It explicitly and clearly names the two core AI models you used (`Markov Chain` and `Rule-Based System`), which is a major point for your project defense.
+*   **Showcases Your Unique Features:** It dedicates a section to explaining your three distinct creative modes (Solo, Ensemble, Chord Mix), proving the depth and complexity of your application.
+*   **Professional Language:** It uses terms like "hybrid system," "probabilistic choices," and "creative partner," which elevates the perception of your project.
+*   **Visually Appealing:** It uses icons and Bootstrap's layout features to be more readable and professional.
