@@ -1,41 +1,54 @@
-import os, sys, json
+import os
+import sys
+from pathlib import Path
+
 from flask import Flask, render_template, request, send_from_directory, jsonify, session, redirect, url_for, flash
 from werkzeug.security import check_password_hash
-from pathlib import Path
-from music21 import chord
 
+# --- All imports are now at the top ---
+from melody_generator import MelodyGenerator
+from chord_generator import generate_chords, create_stream_from_custom_progression
+from exporter import export_solo_composition, export_ensemble_composition, export_custom_composition
+from arranger import create_arpeggiated_accompaniment
+import database_manager as db
 
-try:
-    from melody_generator import MelodyGenerator
-    from chord_generator import generate_chords, create_stream_from_custom_progression
-    from exporter import export_solo_composition, export_ensemble_composition, export_custom_composition
-    from arranger import create_arpeggiated_accompaniment
-    import database_manager as db
-except ImportError as e:
-    print(f"FATAL Error: Could not import a required module from 'src': {e}"); sys.exit(1)
-
-# --- App and AI Initialization ---
-app = Flask(__name__, template_folder='templates', static_folder='static')
-app.config['SECRET_KEY'] = 'your_super_secret_key_change_this'
+# --- App Initialization ---
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'a_very_strong_secret_key_change_this_later'
 app.config['OUTPUT_FOLDER'] = os.path.abspath(os.path.join(os.path.dirname(__file__), 'output'))
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
-db.create_database()
-melody_engine = MelodyGenerator()
-training_data_path = Path(__file__).parent / "training_data" 
-if training_data_path.exists():
-    melody_engine.train(str(training_data_path))
-    print("AI model ready.")
-else:
-    print("FATAL Error: training_data folder not found.")
 
+# --- LAZY LOADING SETUP FOR AI MODEL ---
+db.create_database()
+melody_engine = MelodyGenerator() # Create the engine, but DO NOT train it yet.
+_model_trained = False # This is a flag to make sure we only train once.
+
+def train_model_if_needed():
+    """This function will train the AI model only if it hasn't been trained yet."""
+    global _model_trained
+    if not _model_trained:
+        training_data_path = Path(__file__).parent / "training_data"
+        if training_data_path.exists():
+            print("--- First request received. LAZY TRAINING MODEL... ---")
+            melody_engine.train(str(training_data_path))
+            print("--- MODEL IS NOW TRAINED AND READY ---")
+            _model_trained = True
+        else:
+            print("FATAL: training_data folder not found. Cannot train model.")
+# --- END OF LAZY LOADING SETUP ---
+
+
+# --- Page Serving Routes ---
 @app.route("/")
-def home(): return render_template("home.html")
+def home():
+    return render_template("home.html")
 
 @app.route("/compose")
 def compose_page():
-    if 'user_id' not in session: flash("Please log in.", "warning"); return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash("Please log in to use the composer.", "warning")
+        return redirect(url_for('login'))
     return render_template("compose.html")
-
 
 @app.route("/ensemble")
 def ensemble_page():
@@ -89,12 +102,14 @@ def login():
         else:
             flash("Invalid username or password.", "danger")
    return render_template("login.html")
+
 @app.route("/logout")
 def logout():
     session.clear(); flash("You have been logged out.", "info"); return redirect(url_for('home'))
 
 @app.route("/compose-action", methods=["POST"])
 def compose_action():
+    train_model_if_needed()
     if 'user_id' not in session: return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
         data = request.form
