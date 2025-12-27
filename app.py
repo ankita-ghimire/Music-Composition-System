@@ -56,6 +56,12 @@ def my_compositions():
 @app.route("/about")
 def about(): return render_template("about.html")
 
+
+@app.route('/healthz')
+def healthz():
+    """This is a simple health check route that Render will use."""
+    return "OK", 200
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
    if request.method == "POST":
