@@ -1,28 +1,20 @@
-# In src/chord_generator.py
-# FINAL, BRUTALLY SIMPLE, AND VERIFIED VERSION
 
 import random
 import copy
 from music21 import stream, chord, key, interval
 
 def generate_chords(key_root: str, mode: str, num_bars: int, mood: str = 'default', is_structured=False) -> stream.Stream:
-    """
-    This is the single, unified chord generator. It produces standard, reliable
-    chord.Chord objects to guarantee compatibility with the arranger.
-    """
-    # 1. Determine the final mode based on mood
+    
     final_mode = mode
     if mood == 'happy': final_mode = 'major'
     elif mood == 'sad': final_mode = 'minor'
 
-    # 2. Define the chord progressions in a base key (C Major / A minor)
-    #    This is the most reliable way to create standard Chord objects.
     if final_mode == 'major':
         verse_base = [chord.Chord("C E G"), chord.Chord("G B D"), chord.Chord("A C E"), chord.Chord("F A C")]
         chorus_base = [chord.Chord("F A C"), chord.Chord("C E G"), chord.Chord("G B D"), chord.Chord("A C E")]
         simple_base = verse_base
         source_key_tonic = 'C'
-    else: # minor
+    else: 
         verse_base = [chord.Chord("A C E"), chord.Chord("F A C"), chord.Chord("D F A"), chord.Chord("E G B")]
         chorus_base = [chord.Chord("D F A"), chord.Chord("E G B"), chord.Chord("A C E"), chord.Chord("F A C")]
         simple_base = verse_base
@@ -42,7 +34,6 @@ def generate_chords(key_root: str, mode: str, num_bars: int, mood: str = 'defaul
     for i in range(num_bars):
         section_index = i % 4
         
-        # Use the structured progression if requested, otherwise the simple one
         if is_structured:
             if (i // 4) % 2 == 0: current_prog = verse_prog
             else: current_prog = chorus_prog
@@ -55,19 +46,8 @@ def generate_chords(key_root: str, mode: str, num_bars: int, mood: str = 'defaul
         
     return chord_stream
 
-# --- We now have only ONE chord generator function for simplicity ---
-# The old generate_structured_chords is no longer needed.
-# We control the behavior with the 'is_structured' flag.
-
-# In src/chord_generator.py
-
-# --- ADD THIS NEW FUNCTION AT THE END OF THE FILE ---
-
 def create_stream_from_custom_progression(chord_names: list) -> stream.Stream:
-    """
-    Takes a list of chord name strings from the user and converts
-    it into a music21 Stream of Chord objects.
-    """
+    
     from music21 import stream, chord # Local import
     
     custom_chord_stream = stream.Stream()

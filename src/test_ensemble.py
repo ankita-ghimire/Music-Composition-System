@@ -1,14 +1,11 @@
-# In src/test_ensemble.py
-# A dedicated script for testing the complete multi-instrument ensemble pipeline.
-
 import os
 import sys
 from pathlib import Path
 
-# --- Make sure other src files are discoverable ---
+
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-# --- Import all the necessary modules ---
+
 from melody_generator import MelodyGenerator
 from chord_generator import generate_chords
 # Import the NEW ensemble-specific exporter
@@ -20,10 +17,7 @@ from main import open_in_musescore
 
 
 def run_ensemble_test():
-    """
-    A runnable function for testing the full ENSEMBLE AI pipeline,
-    from user input to final score generation.
-    """
+   
     print("=== Music Composition System (Ensemble Backend Test) ===\n")
     
     # 1. Get all necessary user inputs for the ensemble feature
@@ -73,14 +67,13 @@ def run_ensemble_test():
         accomp_instrument_name=accomp_instrument,
         bpm=tempo_bpm
     )
-    
-    # 6. Open the final multi-instrument score in MuseScore
+
     if xml_filepath:
         print("\n--- Ensemble Backend Test Complete ---")
         open_in_musescore(xml_filepath)
     else:
         print("\n--- Ensemble Backend Test Failed: Could not generate music files. ---")
 
-# This makes the script runnable from the terminal
+
 if __name__ == "__main__":
     run_ensemble_test()
