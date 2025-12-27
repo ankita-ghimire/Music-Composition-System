@@ -21,6 +21,30 @@ client = MongoClient(MONGO_URI)
 db = client['music_app']
 users = db['users']
 
+# --- ADD THESE NEW PAGE ROUTES ---
+
+@app.route('/compose')
+def compose_page():
+    return render_template('compose.html')
+
+@app.route('/ensemble')
+def ensemble_page():
+    return render_template('ensemble.html')
+
+@app.route('/custom')
+def custom_page():
+    return render_template('custom.html')
+
+@app.route('/my-compositions')
+def my_compositions():
+    # This will need more logic later to show compositions, but for now, it will load the page.
+    return render_template('my_compositions.html', compositions=[])
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+
  #Home Route 
 @app.route('/')
 def home():
