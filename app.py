@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+import gc 
 
 from flask import Flask, render_template, request, send_from_directory, jsonify, session, redirect, url_for, flash
 from werkzeug.security import check_password_hash
@@ -34,6 +35,7 @@ def train_model_if_needed():
             melody_engine.train(str(training_data_path))
             print("--- MODEL IS NOW TRAINED AND READY ---")
             _model_trained = True
+            gc.collect()
         else:
             print("FATAL: training_data folder not found. Cannot train model.")
 # --- END OF LAZY LOADING SETUP ---
