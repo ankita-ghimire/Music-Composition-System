@@ -1,12 +1,12 @@
 import os
 import sys
 from pathlib import Path
-import gc 
+import pickle
 
 from flask import Flask, render_template, request, send_from_directory, jsonify, session, redirect, url_for, flash
 from werkzeug.security import check_password_hash
 
-# --- All imports are now at the top ---
+# --- All imports are at the top ---
 from melody_generator import MelodyGenerator
 from chord_generator import generate_chords, create_stream_from_custom_progression
 from exporter import export_solo_composition, export_ensemble_composition, export_custom_composition
@@ -18,27 +18,21 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'a_very_strong_secret_key_change_this_later'
 app.config['OUTPUT_FOLDER'] = os.path.abspath(os.path.join(os.path.dirname(__file__), 'output'))
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
-
-# --- LAZY LOADING SETUP FOR AI MODEL ---
 db.create_database()
-melody_engine = MelodyGenerator() # Create the engine, but DO NOT train it yet.
-_model_trained = False # This is a flag to make sure we only train once.
 
-def train_model_if_needed():
-    """This function will train the AI model only if it hasn't been trained yet."""
-    global _model_trained
-    if not _model_trained:
-        # NOTE: The path is now correct for a flat structure
-        training_data_path = Path(__file__).parent / "training_data"
-        if training_data_path.exists():
-            print("--- First request received. LAZY TRAINING MODEL... ---")
-            melody_engine.train(str(training_data_path))
-            print("--- MODEL IS NOW TRAINED AND READY ---")
-            _model_trained = True
-            gc.collect()
-        else:
-            print("FATAL: training_data folder not found. Cannot train model.")
-# --- END OF LAZY LOADING SETUP ---
+# --- PRE-TRAINED MODEL LOADING ---
+melody_engine = MelodyGenerator()
+model_path = Path(__file__).parent / "trained_model.pkl"
+if model_path.exists():
+    try:
+        with open(model_path, "rb") as f:
+            melody_engine.chain = pickle.load(f)
+        print("--- Pre-trained AI model loaded successfully. ---")
+    except Exception as e:
+        print(f"--- ERROR loading pre-trained model: {e} ---")
+else:
+    print("FATAL WARNING: 'trained_model.pkl' not found. Music generation will not work.")
+# --- END OF MODEL LOADING ---
 
 
 # --- Page Serving Routes ---
@@ -115,11 +109,8 @@ def logout():
     flash("You have been logged out.", "info")
     return redirect(url_for('home'))
 
-
-# --- Music Generation Action Routes (with Lazy Loading) ---
 @app.route("/compose-action", methods=["POST"])
 def compose_action():
-    train_model_if_needed() # <-- TRAIN THE MODEL HERE, ON DEMAND
     if 'user_id' not in session: return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
         data = request.form
@@ -157,9 +148,10 @@ def compose_action():
         print(f"SERVER ERROR in /compose-action: {e}"); import traceback; traceback.print_exc()
         return jsonify({"success": False, "error": "An error occurred."}), 500
 
+
 @app.route("/save-composition", methods=["POST"])
 def save_composition_action():
-    train_model_if_needed()
+    
     if 'user_id' not in session:
         return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
@@ -183,7 +175,7 @@ def save_composition_action():
     
 @app.route("/ensemble-action", methods=["POST"])
 def ensemble_action():
-    train_model_if_needed()
+   
     if 'user_id' not in session: return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
         data = request.form
@@ -224,7 +216,6 @@ def ensemble_action():
 
 @app.route("/save-ensemble-composition", methods=["POST"])
 def save_ensemble_composition_action():
-    train_model_if_needed()
     if 'user_id' not in session:
         return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
@@ -249,7 +240,6 @@ def save_ensemble_composition_action():
 
 @app.route("/custom-action", methods=["POST"])
 def custom_action():
-    train_model_if_needed()
     if 'user_id' not in session: return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
         data = request.form
@@ -295,7 +285,6 @@ def custom_action():
 
 @app.route("/save-custom-composition", methods=["POST"])
 def save_custom_composition_action():
-    train_model_if_needed()
     if 'user_id' not in session:
         return jsonify({"success": False, "error": "Authentication required."}), 401
     try:
@@ -320,7 +309,7 @@ def save_custom_composition_action():
 def midi_data(filename):
     """Serves the raw MIDI file data for the in-browser player."""
     return send_from_directory(app.config['OUTPUT_FOLDER'], filename)
-# --- END OF FIX ---
+
 
 @app.route("/play-midi/<int:comp_id>")
 def play_midi_from_db(comp_id):
