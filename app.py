@@ -6,14 +6,12 @@ import pickle
 from flask import Flask, render_template, request, send_from_directory, jsonify, session, redirect, url_for, flash
 from werkzeug.security import check_password_hash
 
-# --- All imports are at the top ---
 from melody_generator import MelodyGenerator
 from chord_generator import generate_chords, create_stream_from_custom_progression
 from exporter import export_solo_composition, export_ensemble_composition, export_custom_composition
 from arranger import create_arpeggiated_accompaniment
 import database_manager as db
 
-# --- App Initialization ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'a_very_strong_secret_key_change_this_later'
 app.config['OUTPUT_FOLDER'] = os.path.abspath(os.path.join(os.path.dirname(__file__), 'output'))
@@ -33,6 +31,8 @@ if model_path.exists():
 else:
     print("FATAL WARNING: 'trained_model.pkl' not found. Music generation will not work.")
 # --- END OF MODEL LOADING ---
+
+
 
 
 # --- Page Serving Routes ---
