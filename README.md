@@ -13,7 +13,7 @@ A live deployment was attempted, but the memory requirements for the AI model's 
 
 This video demonstrates the fully functional application running locally.
 
-**[Watch the Full Demo on YouTube]((https://youtu.be/LXfl-zWmNtM))**
+**[Watch the Full Demo on YouTube](https://youtu.be/LXfl-zWmNtM)**
 
 ![Project Demo GIF](https://_LINK_TO_A_GIF.gif)
 
