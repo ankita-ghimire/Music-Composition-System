@@ -15,8 +15,7 @@ This video demonstrates the fully functional application running locally.
 
 **[Watch the Full Demo on YouTube](https://youtu.be/LXfl-zWmNtM)**
 
-![Project Demo GIF]([https://LINK_TO_A_GIF.gif](https://github.com/ankita-ghimire/Music-Composition-System/blob/main/LINK_TO_A_GIF.gif?raw=true))
-
+![Project Demo GIF](https://github.com/ankita-ghimire/Music-Composition-System/blob/main/LINK_TO_A_GIF.gif?raw=true)
 ---
 
 ## 🌟 Core Features
