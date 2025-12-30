@@ -15,7 +15,7 @@ This video demonstrates the fully functional application running locally.
 
 **[Watch the Full Demo on YouTube](https://youtu.be/LXfl-zWmNtM)**
 
-![Project Demo GIF](https://_LINK_TO_A_GIF.gif)
+![Project Demo GIF](https://LINK_TO_A_GIF.gif)
 
 ---
 
